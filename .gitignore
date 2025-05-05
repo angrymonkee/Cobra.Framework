@@ -1,0 +1,13 @@
+Archive/*
+GRTS/*
+Packages/*
+Report/*
+Modules/Garrison/*
+Modules/Greenbelt/*
+Modules/GreenbeltCli/*
+Modules/GreenbeltDevPortal/*
+Modules/GreenbeltSdk/*
+Modules/Anaconda/*
+Modules/OpenAI/*
+Report_Scripts.ps1
+config.ps1

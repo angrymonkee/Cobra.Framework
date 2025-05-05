@@ -2,7 +2,7 @@
 . "$PSScriptRoot\config.ps1"
 
 if (-not ($global:coreScriptLoaded)) {
-    . "$env:COBRA_ROOT/CobraGen2/Core.ps1"
+    . "$env:COBRA_ROOT/Core.ps1"
 }
 
 # ================= Configuration =================
@@ -419,9 +419,9 @@ function Initialize-CobraEnvironmentVariables {
             $value = $default
         }
 
-        # Set the environment variable
-        [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
-        Write-Host "Set environment variable: $name = $value"
+        # Set the environment variable globally
+        [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Machine)
+        Write-Host "Set environment variable globally: $name = $value"
     }
 
     Write-Host "Environment variables initialized successfully." -ForegroundColor Green
@@ -447,7 +447,7 @@ function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options
         add {
             if ($options.Count -eq 1) {
                 $moduleName = $options[0]
-                $modulePath = Join-Path $PSScriptRoot "CobraGen2\Modules\$moduleName"
+                $modulePath = Join-Path $PSScriptRoot "Modules\$moduleName"
                 if (-not (Test-Path $modulePath)) {
                     New-Item -Path $modulePath -ItemType Directory
                     New-Item -Path "$modulePath\$moduleName.psm1" -ItemType File
@@ -473,10 +473,10 @@ function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options
         edit {
             if ($options.Count -eq 1) {
                 $moduleName = $options[0]
-                write-host "Editing module: $moduleName at location $PSScriptRoot\CobraGen2\Modules\$moduleName\$moduleName.psm1"
-                write-host "Editing module: $moduleName at location $PSScriptRoot\CobraGen2\Modules\$moduleName\config.ps1"
-                code "$PSScriptRoot\CobraGen2\Modules\$moduleName\$moduleName.psm1"
-                code "$PSScriptRoot\CobraGen2\Modules\$moduleName\config.ps1"
+                write-host "Editing module: $moduleName at location $PSScriptRoot\Modules\$moduleName\$moduleName.psm1"
+                write-host "Editing module: $moduleName at location $PSScriptRoot\Modules\$moduleName\config.ps1"
+                code "$PSScriptRoot\Modules\$moduleName\$moduleName.psm1"
+                code "$PSScriptRoot\Modules\$moduleName\config.ps1"
             }
             else {
                 Write-Host "Invalid options for 'edit'. Provide the name of the module to edit." -ForegroundColor Red
@@ -485,7 +485,7 @@ function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options
         remove {
             if ($options.Count -eq 1) {
                 $moduleName = $options[0]
-                $modulePath = Join-Path $PSScriptRoot "CobraGen2\Modules\$moduleName"
+                $modulePath = Join-Path $PSScriptRoot "Modules\$moduleName"
                 if (Test-Path $modulePath) {
                     Write-Host "Are you sure you want to remove the module $moduleName? This action cannot be undone." -ForegroundColor Red
                     $confirmation = Read-Host "Type 'yes' to confirm removal of the module"
@@ -588,7 +588,7 @@ function Import-CobraModule {
         [string]$artifactPath
     )
 
-    $destinationPath = Join-Path $PSScriptRoot "CobraGen2\Modules\$moduleName"
+    $destinationPath = Join-Path $PSScriptRoot "Modules\$moduleName"
 
     # If no artifactPath is provided, look in the CobraModuleRegistry
     if (-not $artifactPath) {
@@ -657,7 +657,7 @@ function Export-CobraModule {
         [string]$artifactPath
     )
 
-    $modulePath = Join-Path $PSScriptRoot "CobraGen2\Modules\$moduleName"
+    $modulePath = Join-Path $PSScriptRoot "Modules\$moduleName"
 
     if (-not (Test-Path $modulePath)) {
         Write-Host "Module '$moduleName' does not exist at $modulePath." -ForegroundColor Red
@@ -972,6 +972,6 @@ function GetLog() {
 # - Add logic to load and unload modules from repository
 # - Add logic to create jobs (manual, events, or scheduled) at repo level and global level
 # - Module and repo health checks
-# - Predefined module initialization (e.g. CobraGen2, Xbox, etc.)
+# - Predefined module initialization (e.g. Xbox, etc.)
 # - Export/import modules
 # - Add logic for pluggable utility commands

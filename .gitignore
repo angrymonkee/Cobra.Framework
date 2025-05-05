@@ -10,4 +10,5 @@ Modules/GreenbeltSdk/*
 Modules/Anaconda/*
 Modules/OpenAI/*
 Report_Scripts.ps1
+Utils/ExperimentalUtils.psm1
 config.ps1

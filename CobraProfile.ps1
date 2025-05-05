@@ -865,113 +865,12 @@ enum packageName {
 # Packages
 $global:PackagesRepo = "$($global:CobraConfig.CodeRoot)\Packages"
 
-function MakePackage ([packageName] $package) {
-    $src = Get-Location
-    $currentDateTime = Get-Date -Format "yyyyMMdd_HHmmss"
-    $packageName = $package.ToString()
-
-    repo Packages
-
-    # Create the directory name with the package prefix and current date and time suffix
-    $directoryName = $packageName + "_$currentDateTime"
-    New-Item -Path $directoryName -ItemType Directory
-    Write-Host "Created directory: $directoryName"
-
-    cd $directoryName
-
-    switch ($package) {
-        GreenbeltCLI {
-            # Follow the instructions here to download the Greenbelt.CommandLine artifacts
-            # needed in STEP 2
-            # https://microsoft.visualstudio.com/Xbox/_git/Xbox.Greenbelt?path=/Documentation/HowToReleaseSdkAndCli.md&_a=preview
-
-            # STEP 1: Create the directory structure
-            Write-Host "Creating directory structure for Greenbelt SDK package"
-            mkdir "Greenbelt.Commandline"
-            mkdir "Greenbelt.Commandline\Linux"
-            mkdir "Greenbelt.Commandline\Windows"
-
-            # STEP 2: Copy the commandline files to the directory
-            Write-Host "Go Here: https://dev.azure.com/microsoft/Xbox/_build?definitionId=96334&_a=summary"
-            Write-Host "Select the latest build (all stages showing green)"
-            Write-Host "1/2 way down the page, click the link that says '1 artifact'"
-            Write-Host "Expand heading called 'drop_deploymentfiles->LinuxCLIPublish'"
-            Write-Host "On the ellipsis menu for Greenbelt.CommandLine, choose 'Download Artifact'"
-            $linuxPath = Read-Host "Enter Linux commandline url"
-            Write-Host "Copying commandline files to the Linux directory"
-            Invoke-WebRequest -Uri $linuxPath -OutFile "Greenbelt.Commandline\Linux\Greenbelt.CommandLine.exe"
-            $windowsPath = Read-Host "Enter Windows commandline url"
-            Write-Host "Copying commandline files to the Windows directory"
-            Invoke-WebRequest -Uri $windowsPath -OutFile "Greenbelt.Commandline\Windows\Greenbelt.CommandLine.exe"
-
-            # STEP 3: Create a zip file from the directory
-            $zipFileName = "Greenbelt.Commandline.zip"
-            Compress-Archive -Path "$global:PackageRepo\$directoryName\Greenbelt.Commandline" -DestinationPath "$global:PackageRepo\$directoryName\$zipFileName"
-            Write-Host "Created zip file: $zipFileName"
-        }
-    }
-
-    cd $src
-}
-
-# Deploy to environment
-function DeployApp {
-    $src = Get-Location
-    if ($src.Path.StartsWith($global:GreenbeltRepo)) {
-        write-host "Changing directory to 'Scripts\Developers\dajon'"
-        cd Scripts\Developers\dajon
-
-        if (ShouldContinue "Do you need to authenticate?" "N") {
-            write-host "Authenticating..."
-            az login --scope https://management.azure.com/.default --use-device-code
-        }
-
-        if (ShouldContinue "Would you like to deploy to your current stamp?" "N") {
-            write-host "Deploying stamp..."
-            .\Deploy-Stamp.ps1
-        }
-
-        if (ShouldContinue "Would you like to deploy to your region?" "N") {
-            write-host "Deploying region..."
-            .\Deploy-Region.ps1
-        }
-
-        # Change back to Developers directory
-        cd ..
-
-        if (ShouldContinue("Would you like to push your local changes?")) {
-            write-host "Deploying local changes to stamp..."
-            .\DeployLocalBuild.ps1 dajon "01" CloudDevkitLeaseProcessor
-        }
-
-        write-host "Changing directory back to root"
-        Set-Location $src
-    }
-    else {
-        Write-Host "You are not in a valid repo to deploy the app"
-    }
-}
-
-function GetLog() {
-    $src = Get-Location
-    if ($src.Path.StartsWith($global:GreenbeltRepo)) {
-        az account set --subscription c321dad1-fd4e-4242-a667-a47aefd728af
-        az aks get-credentials --resource-group dajon-01-shared --name dajon-01-alpha-1-A --overwrite-existing
-
-        write-host "Changing directory back to root"
-        Set-Location $src
-    }
-    else {
-        Write-Host "You are not in a valid repo to get the log"
-    }
-}
-
 
 # TODO List:
 # - Add logic to automatically pull down a repo if it doesn't exist
 # - Add logic to load and unload modules from repository
 # - Add logic to create jobs (manual, events, or scheduled) at repo level and global level
 # - Module and repo health checks
-# - Predefined module initialization (e.g. Xbox, etc.)
+# - Predefined module initialization, pulls down repo
 # - Export/import modules
 # - Add logic for pluggable utility commands

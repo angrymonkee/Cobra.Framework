@@ -25,9 +25,9 @@ function repo ([string] $name) {
         $global:currentAppConfig = $appConfig
         Write-Host "Loaded $enumName configuration."
 
-        # Check if CODE_REPO environment variable is set
+        # Check if CodeRepo variable is set in config
         if (-not $global:CobraConfig.CodeRepo) {
-            Write-Host "CODE_REPO environment variable is not set. Please run 'cobra init' to set environment variables." -ForegroundColor Red
+            Write-Host "CodeRepo configuration variable is not set. Please run 'cobra env init' to set environment variables." -ForegroundColor Red
             return
         }
 
@@ -391,36 +391,46 @@ Register-ArgumentCompleter -CommandName repo -ParameterName name -ScriptBlock {
 function Initialize-CobraEnvironmentVariables {
     Write-Host "Initializing environment variables..." -ForegroundColor Green
 
-    # Define all environment variables used in the workspace with default values
-    $envVariables = @(
-        @{ Name = "COBRA_ROOT"; Default = if ($null -ne $env:COBRA_ROOT) { $env:COBRA_ROOT } else { "C:\Path\To\<Location of Cobra files and modules>" } },
-        @{ Name = "CODE_REPO"; Default = if ($null -ne $env:CODE_REPO) { $env:CODE_REPO } else { "C:\Path\To\<Root code directory where all repos will live>" } }
-    )
+    # Path to the config.ps1 file
+    $configFilePath = Join-Path $PSScriptRoot "config.ps1"
 
-    # Prompt the user for each environment variable
-    foreach ($envVar in $envVariables) {
-        $name = $envVar.Name
-        $default = $envVar.Default
-
-        # Prompt the user for the value
-        $value = Read-Host "Enter value for $name (default: $default)"
-        if ([string]::IsNullOrWhiteSpace($value)) {
-            $value = $default
-        }
-
-        # Set the environment variable globally
-        [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Machine)
-        Write-Host "Set environment variable globally: $name = $value"
+    # Check if config.ps1 exists
+    if (-not (Test-Path $configFilePath)) {
+        Write-Host "config.ps1 not found. Creating a new one..." -ForegroundColor Yellow
+        New-Item -Path $configFilePath -ItemType File -Force | Out-Null
+        $global:CobraConfig = @{} # Initialize an empty hashtable if config.ps1 is missing
     }
 
+    # Prompt the user for each key in $global:CobraConfig
+    foreach ($key in $global:CobraConfig.Keys) {
+        $currentValue = $global:CobraConfig[$key]
+        $newValue = Read-Host "Enter value for $key (current: $currentValue)"
+        if (-not [string]::IsNullOrWhiteSpace($newValue)) {
+            $global:CobraConfig[$key] = $newValue
+        }
+    }
+
+    # Write updated values back to config.ps1
+    $updatedConfigContent = @()
+    $updatedConfigContent += "# Global settings for the application"
+    $updatedConfigContent += "`$global:CobraConfig = @{"
+    foreach ($key in $global:CobraConfig.Keys) {
+        $updatedConfigContent += "    $key = '$($global:CobraConfig[$key])'"
+    }
+    $updatedConfigContent += "}"
+    $updatedConfigContent | Set-Content -Path $configFilePath -Force
+
+    Write-Host "config.ps1 updated successfully." -ForegroundColor Green
     Write-Host "Environment variables initialized successfully." -ForegroundColor Green
 }
 
 function Get-CobraEnvironmentConfiguration {
     Write-Host "Current Environment Variables:" -ForegroundColor Green
     Write-Host "--------------------------------------------"
-    Write-Host "COBRA_ROOT = $($global:CobraConfig.CobraRoot)"
-    Write-Host "CODE_REPO = $($global:CobraConfig.CobraRepo)"
+    foreach ($key in $global:CobraConfig.Keys) {
+        Write-Host "$key = $($global:CobraConfig[$key])"
+    }
+    Write-Host "--------------------------------------------"
 }
 
 enum CobraModulesCommands {

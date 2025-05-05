@@ -6,7 +6,6 @@ if ($null -eq $global:CobraScriptModules) {
 }
 
 # =================== Shared Cobra State ==================
-$global:cobraRootDirectory = $env:COBRA_ROOT
 $global:currentAppConfig = $null
 $global:goTaskStore = @{}
 $global:AppConfigs = @{}
@@ -261,7 +260,7 @@ function GetCurrentAppConfig() {
 function VerifyInRepo([string]$repo) {
     $src = Get-Location
 
-    $cleanRepo = "$($global:CobraConfig.CodeRoot)\$($repo -replace "\\\\", "\")"
+    $cleanRepo = "$($global:CobraConfig.CodeRepo)\$($repo -replace "\\\\", "\")"
     if (-not $src.Path.Equals($cleanRepo)) {
         Write-Host "Please run this script from $cleanRepo repository."
         return $false

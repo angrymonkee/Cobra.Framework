@@ -44,7 +44,7 @@ The `config.ps1` file is the global configuration file for the Cobra Framework. 
 # filepath: d:\Code\Cobra.Framework\config.ps1
 @{
     CobraRoot = "C:\Path\To\Cobra\Framework"
-    CodeRoot  = "C:\Path\To\Repositories"
+    CodeRepo  = "C:\Path\To\Repositories"
     ModuleRegistryLocation = "C:\Path\To\ModuleRegistry"
 }
 ```
@@ -52,7 +52,7 @@ The `config.ps1` file is the global configuration file for the Cobra Framework. 
 ### Key Properties
 
 - **`CobraRoot`**: Specifies the root directory of the Cobra Framework.
-- **`CodeRoot`**: Defines the root directory where all repositories are stored.
+- **`CodeRepo`**: Defines the root directory where all repositories are stored.
 - **`ModuleRegistryLocation`**: Path to the registry where Cobra modules are stored for import.
 
 ### Usage

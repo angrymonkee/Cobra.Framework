@@ -2,7 +2,7 @@
 . "$PSScriptRoot\config.ps1"
 
 if (-not ($global:coreScriptLoaded)) {
-    . "$env:COBRA_ROOT/Core.ps1"
+    . "$($global:CobraConfig.CobraRoot)/Core.ps1"
 }
 
 # ================= Configuration =================
@@ -26,12 +26,12 @@ function repo ([string] $name) {
         Write-Host "Loaded $enumName configuration."
 
         # Check if CODE_REPO environment variable is set
-        if (-not $global:CobraConfig.CodeRoot) {
+        if (-not $global:CobraConfig.CodeRepo) {
             Write-Host "CODE_REPO environment variable is not set. Please run 'cobra init' to set environment variables." -ForegroundColor Red
             return
         }
 
-        $repoLocation = "$($global:CobraConfig.CodeRoot)\$($appConfig.Repo)"
+        $repoLocation = "$($global:CobraConfig.CodeRepo)\$($appConfig.Repo)"
         if (-not (Test-Path $repoLocation)) {
             Write-Host "Invalid repository location: $repoLocation. Check configuration." -ForegroundColor Red
             return
@@ -140,17 +140,6 @@ function Update-GoLocation {
     }
     else {
         Write-Host "Go location not found: $name" -ForegroundColor Red
-    }
-}
-
-
-function SwitchSandbox ([string]$SandboxName) {
-    if ($SandboxName -eq "") {
-        Xblpcsandbox
-        Write-Output "Common sandboxes: XDKS.1, MSFT.1, RETAIL"
-    }
-    else {
-        Xblpcsandbox $SandboxName
     }
 }
 
@@ -430,8 +419,8 @@ function Initialize-CobraEnvironmentVariables {
 function Get-CobraEnvironmentConfiguration {
     Write-Host "Current Environment Variables:" -ForegroundColor Green
     Write-Host "--------------------------------------------"
-    Write-Host "COBRA_ROOT = $($env:COBRA_ROOT)"
-    Write-Host "CODE_REPO = $($env:CODE_REPO)"
+    Write-Host "COBRA_ROOT = $($global:CobraConfig.CobraRoot)"
+    Write-Host "CODE_REPO = $($global:CobraConfig.CobraRepo)"
 }
 
 enum CobraModulesCommands {
@@ -694,7 +683,7 @@ function ShowUtilityFunctions {
 
             $childItems | ForEach-Object {
                 $scriptContent = Get-Content $_.FullName
-                $functions = $scriptContent | Select-String -Pattern "function\s+(\w+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+                $functions = $scriptContent | Select-String -Pattern "function\s+(\w+)" | Where-Object { $_.Line -notmatch "^\s*#" -and $_.Line -notmatch "Export-ModuleMember" } | ForEach-Object { $_.Matches.Groups[1].Value }
                 foreach ($function in $functions) {
                     # Extract the comment above the function as the description
                     $description = ($scriptContent -split "`n" | Select-String -Pattern "^\s*#.*" -Context 0, 1 | Where-Object { $_.Context.PostContext -match "function\s+$function" }).Line.TrimStart('#').Trim()
@@ -749,8 +738,6 @@ function CobraHelp {
     write-host "            - Allows you to switch between various developer code repositories. Type 'repo' for specific help." -ForegroundColor DarkGray
     Write-Host " go" -NoNewline
     write-host "              - Allows you to navigate to various tasks. Type 'go' for specific help." -ForegroundColor DarkGray
-    Write-Host " SwitchSandbox" -NoNewline
-    write-host "   - Switch between sandboxes" -ForegroundColor DarkGray
     Write-Host ""
     ShowUtilityFunctions
     Write-Host -ForegroundColor DarkGray "COBRA CONFIG & SETUP COMMANDS:"
@@ -863,7 +850,7 @@ enum packageName {
 }
 
 # Packages
-$global:PackagesRepo = "$($global:CobraConfig.CodeRoot)\Packages"
+$global:PackagesRepo = "$($global:CobraConfig.CodeRepo)\Packages"
 
 
 # TODO List:

@@ -1,6 +1,25 @@
-# Cobra.Framework
+# Cobra Framework
 
-A modular PowerShell framework for managing multiple repositories and development workflows.
+Cobra Framework is a modular PowerShell framework for managing multiple repositories and development workflows.
+
+## Features
+
+- Modular architecture for easy extension
+- Built-in repository management
+- Custom utility scripts
+- Global configuration support
+
+## Installation
+
+```bash
+# Installation instructions
+```
+
+## Usage
+
+```bash
+# Usage instructions
+```
 
 ## Structure
 
@@ -91,15 +110,6 @@ function Auth-YourRepo {
 Export-ModuleMember -Function Initialize-YourRepoModule, Auth-YourRepo, ...
 ```
 
-## Usage
-
-1. Set the `COBRA_ROOT` environment variable to point to this directory.
-2. Source the Core.ps1 file in your PowerShell profile:
-   ```powershell
-   . "$env:COBRA_ROOT/Core.ps1"
-   Load-CobraModules
-   ```
-
 ## Available Commands
 
 ### Navigation Commands
@@ -157,6 +167,8 @@ Export-ModuleMember -Function Initialize-YourRepoModule, Auth-YourRepo, ...
 
 Contributions are welcome! Add new utility scripts to the `Utils` folder or extend the framework by creating new modules.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).

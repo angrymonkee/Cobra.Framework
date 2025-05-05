@@ -58,6 +58,8 @@ function New-ModuleConfigFile {
         TestMethod     = "Test-$($moduleName)Repo"
         RunMethod      = "Execute-$($moduleName)Repo"
         DevMethod      = "Develop-$($moduleName)Repo"
+        ReviewPullRequests = "Read-$($moduleName)PullRequests"
+        OpenPullRequest    = "Open-$($moduleName)PullRequestById"
         GoLocations    = @{}
     }
 "@

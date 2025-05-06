@@ -389,7 +389,7 @@ Register-ArgumentCompleter -CommandName repo -ParameterName name -ScriptBlock {
 }
 
 function Initialize-CobraEnvironmentVariables {
-    Write-Host "Initializing environment variables..." -ForegroundColor Green
+    Write-Host "Setting up system configuration..."
 
     # Path to the config.ps1 file
     $configFilePath = Join-Path $PSScriptRoot "config.ps1"
@@ -402,10 +402,12 @@ function Initialize-CobraEnvironmentVariables {
     }
 
     # Prompt the user for each key in $global:CobraConfig
-    foreach ($key in $global:CobraConfig.Keys) {
+    $keysToLoop = @($global:CobraConfig.Keys)
+    foreach ($key in $keysToLoop) {
         $currentValue = $global:CobraConfig[$key]
         $newValue = Read-Host "Enter value for $key (current: $currentValue)"
         if (-not [string]::IsNullOrWhiteSpace($newValue)) {
+            write-host "Setting $key to $newValue" -ForegroundColor Green
             $global:CobraConfig[$key] = $newValue
         }
     }
@@ -420,17 +422,17 @@ function Initialize-CobraEnvironmentVariables {
     $updatedConfigContent += "}"
     $updatedConfigContent | Set-Content -Path $configFilePath -Force
 
-    Write-Host "config.ps1 updated successfully." -ForegroundColor Green
-    Write-Host "Environment variables initialized successfully." -ForegroundColor Green
+    Write-Host "System configuration updated successfully." -ForegroundColor Green
 }
 
 function Get-CobraEnvironmentConfiguration {
-    Write-Host "Current Environment Variables:" -ForegroundColor Green
-    Write-Host "--------------------------------------------"
+    Write-Host "Current System Configuration:" -ForegroundColor DarkGray
+    Write-Host "--------------------------------------------" -ForegroundColor DarkGray
     foreach ($key in $global:CobraConfig.Keys) {
-        Write-Host "$key = $($global:CobraConfig[$key])"
+        Write-Host "$key" -NoNewline
+        write-host " = $($global:CobraConfig[$key])" -ForegroundColor DarkGray
     }
-    Write-Host "--------------------------------------------"
+    Write-Host "--------------------------------------------" -ForegroundColor DarkGray
 }
 
 enum CobraModulesCommands {

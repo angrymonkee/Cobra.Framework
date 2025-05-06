@@ -319,20 +319,6 @@ function viewPRs {
     }
 }
 
-# ================= Utility Commands ==================
-# When you need to create a CAB file, run wsreset, reproduce the issue, then run wscollect
-# function CleanEventLog {
-#     wsreset
-# }
-
-# function DumpEventLog {
-#     wscollect
-# }
-
-# function HostsFile {
-#     Start-Process notepad "$env:SystemRoot\System32\drivers\etc\hosts" -Verb runAs
-# }
-
 # =================== Helper Methods ===================
 function GoToRepo([string]$repo) {
     Set-Location -Path $repo
@@ -866,10 +852,6 @@ $global:PackagesRepo = "$($global:CobraConfig.CodeRepo)\Packages"
 
 
 # TODO List:
-# - Add logic to automatically pull down a repo if it doesn't exist
-# - Add logic to load and unload modules from repository
 # - Add logic to create jobs (manual, events, or scheduled) at repo level and global level
 # - Module and repo health checks
 # - Predefined module initialization, pulls down repo
-# - Export/import modules
-# - Add logic for pluggable utility commands

@@ -11,9 +11,23 @@ Cobra Framework is a modular PowerShell framework for managing multiple reposito
 
 ## Installation
 
-```bash
-# Installation instructions
+To install the Cobra Framework, run the following script:
+
+```powershell
+.\Install.ps1
 ```
+
+This will add a reference to `CobraProfile.ps1` in your PowerShell profile, enabling the Cobra tools.
+
+## Uninstallation
+
+To uninstall the Cobra Framework, run the following script:
+
+```powershell
+.\Uninstall.ps1
+```
+
+This will remove the reference to `CobraProfile.ps1` from your PowerShell profile.
 
 ## Usage
 

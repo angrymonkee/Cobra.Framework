@@ -631,6 +631,8 @@ function Import-CobraModule {
     $moduleFile = Join-Path "$destinationPath" "$moduleName.psm1"
     if (Test-Path $moduleFile) {
         Import-Module $moduleFile -Force -DisableNameChecking
+        # Initialize the module
+        & "Initialize-$($moduleName)Module"
         Write-Host "Module '$moduleName' loaded into the current session." -ForegroundColor Green
     }
     else {

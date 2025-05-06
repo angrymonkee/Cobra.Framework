@@ -18,35 +18,44 @@ function repo ([string] $name) {
 
         if ($null -eq $appConfig) {
             Write-Host "AppConfig not found for $enumName" -ForegroundColor Red
+            Log-CobraActivity "Failed to load repository: $name. AppConfig not found."
             return
         }
 
         # Set the current app config
         $global:currentAppConfig = $appConfig
         Write-Host "Loaded $enumName configuration."
+        Log-CobraActivity "Loaded repository configuration for: $name."
 
         # Check if CodeRepo variable is set in config
         if (-not $global:CobraConfig.CodeRepo) {
             Write-Host "CodeRepo configuration variable is not set. Please run 'cobra env init' to set environment variables." -ForegroundColor Red
+            Log-CobraActivity "Failed to load repository: $name. CodeRepo configuration variable is not set."
             return
         }
 
         $repoLocation = "$($global:CobraConfig.CodeRepo)\$($appConfig.Repo)"
         if (-not (Test-Path $repoLocation)) {
             Write-Host "Invalid repository location: $repoLocation. Check configuration." -ForegroundColor Red
+            Log-CobraActivity "Failed to load repository: $name. Invalid repository location: $repoLocation."
             return
         }
 
         GoToRepo($repoLocation)
+        Log-CobraActivity "Navigated to repository location: $repoLocation."
+
         if ($null -ne $appConfig.GoLocations -and $appConfig.GoLocations.Count -gt 0) {
             $global:goTaskStore = $appConfig.GoLocations
             Write-Host "Loaded 'Go' locations."
+            Log-CobraActivity "Loaded 'Go' locations for repository: $name."
         }
         else {
             write-host "No Go locations configured." -ForegroundColor Yellow
+            Log-CobraActivity "No 'Go' locations configured for repository: $name."
         }
     }
     catch {
+        Log-CobraActivity "Error occurred while loading repository: $name. Error: $($_.Exception.Message)"
         Write-Host "An error occurred trying to load repository: $name"
         Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
         write-host "---------------------------------------------------------" -ForegroundColor DarkGray
@@ -70,6 +79,7 @@ function go ([string] $name) {
         if ($null -ne $global:goTaskStore -and $global:goTaskStore.ContainsKey($name) -eq $true) {
             Write-Host "Opening URL $name"
             GoToUrl $global:goTaskStore[$name][1]
+            Log-CobraActivity "Opened URL for 'Go' location: $name."
         }
         else {
             Write-Host "'GO' HELP" -ForegroundColor DarkGray
@@ -85,10 +95,12 @@ function go ([string] $name) {
                 Write-Host "    $key" -NoNewline
                 write-host " - $($global:goTaskStore[$key][0])" -ForegroundColor DarkGray
             }
+            Log-CobraActivity "Failed to open 'Go' location: $name. Location not found."
         }    
     }
     catch {
         go
+        Log-CobraActivity "Error occurred while executing 'go' command for: $name. Error: $($_.Exception.Message)"
     }
 }
 
@@ -160,6 +172,8 @@ function AuthApp {
     finally {
         Set-Location $src
     }
+
+    Log-CobraActivity "Executed AuthApp for $($appConfig.Name) repo"
 }
 
 function SetupApp {
@@ -178,6 +192,8 @@ function SetupApp {
     finally {
         Set-Location $src
     }
+
+    Log-CobraActivity "Executed SetupApp for $($appConfig.Name) repo"
 }
 
 enum buildType {
@@ -202,6 +218,8 @@ function BuildApp ([buildType] $buildType = [buildType]::Build) {
     finally {
         Set-Location $src
     }
+
+    Log-CobraActivity "Executed BuildApp for $($appConfig.Name) repo with build type: $buildType"
 }
 
 function TestApp {
@@ -220,6 +238,8 @@ function TestApp {
     finally {
         Set-Location $src
     }
+
+    Log-CobraActivity "Executed TestApp for $($appConfig.Name) repo"
 }
 
 function RunApp { 
@@ -238,6 +258,8 @@ function RunApp {
     finally {
         Set-Location $src
     }
+
+    Log-CobraActivity "Executed RunApp for $($appConfig.Name) repo"
 }
 
 Function RunPullRequestPrep { 
@@ -518,6 +540,9 @@ function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options
             CobraHelp
         }
     }
+
+    # Log module operations
+    Log-CobraActivity "Executed $command command with options: $($options -join ', ')"
 }
 
 function ShowCobraScriptModules() {
@@ -567,6 +592,9 @@ function CobraGoDriver([CobraGoCommands] $command, [string[]] $options) {
             Write-Host "Invalid command. Type 'cobra go' for usage."
         }
     }
+
+    # Log 'go' location operations
+    Log-CobraActivity "Executed $command command with options: $($options -join ', ')"
 }
 
 function Import-CobraModule {
@@ -857,3 +885,4 @@ $global:PackagesRepo = "$($global:CobraConfig.CodeRepo)\Packages"
 # - Add logic to create jobs (manual, events, or scheduled) at repo level and global level
 # - Module and repo health checks
 # - Predefined module initialization, pulls down repo
+# - Logging

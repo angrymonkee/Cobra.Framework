@@ -209,6 +209,8 @@ function Update-ModuleConfigFile {
     TestMethod     = "$($config.TestMethod)"
     RunMethod      = "$($config.RunMethod)"
     DevMethod      = "$($config.DevMethod)"
+    ReviewPullRequests = "$($config.ReviewPullRequests)"
+    OpenPullRequest    = "$($config.OpenPullRequest)"
     GoLocations    = @{
     $($goLocationsString)}
 }
@@ -303,4 +305,22 @@ function SendMessage ([string]$message, [string]$recipient) {
 
     # Placeholder for sending a message to a recipient
     Write-Host "Sending message to $($recipient): $message"
+}
+
+function Log-CobraActivity {
+    param (
+        [string]$message
+    )
+
+    # Define the log file path
+    $logFilePath = Join-Path $PSScriptRoot "CobraActivity.log"
+
+    # Get the current timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    # Format the log entry
+    $logEntry = "$timestamp - $message"
+
+    # Append the log entry to the log file
+    Add-Content -Path $logFilePath -Value $logEntry
 }

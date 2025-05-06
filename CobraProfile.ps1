@@ -388,8 +388,8 @@ Register-ArgumentCompleter -CommandName repo -ParameterName name -ScriptBlock {
     }
 }
 
-function Initialize-CobraEnvironmentVariables {
-    Write-Host "Setting up system configuration..."
+function Update-CobraSystemConfiguration {
+    Write-Host "Updating system configuration..."
 
     # Path to the config.ps1 file
     $configFilePath = Join-Path $PSScriptRoot "config.ps1"
@@ -426,10 +426,10 @@ function Initialize-CobraEnvironmentVariables {
 }
 
 function Get-CobraEnvironmentConfiguration {
-    Write-Host "Current System Configuration:" -ForegroundColor DarkGray
+    Write-Host "SYSTEM CONFIGURATION" -ForegroundColor DarkGray
     Write-Host "--------------------------------------------" -ForegroundColor DarkGray
     foreach ($key in $global:CobraConfig.Keys) {
-        Write-Host "$key" -NoNewline
+        Write-Host " $key" -NoNewline
         write-host " = $($global:CobraConfig[$key])" -ForegroundColor DarkGray
     }
     Write-Host "--------------------------------------------" -ForegroundColor DarkGray
@@ -825,7 +825,7 @@ function CobraDriver([CobraCommand] $command, [string[]] $options) {
         env {
             $subCommand = $options[0]
             if ($subCommand -eq "init") {
-                Initialize-CobraEnvironmentVariables
+                Update-CobraSystemConfiguration
             }
             else {
                 Get-CobraEnvironmentConfiguration

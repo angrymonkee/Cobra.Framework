@@ -9,6 +9,7 @@ if ($null -eq $global:CobraScriptModules) {
 $global:currentAppConfig = $null
 $global:goTaskStore = @{}
 $global:AppConfigs = @{}
+$global:requiredKeys = @("Name", "Repo", "AuthMethod", "SetupMethod", "BuildMethod", "TestMethod", "RunMethod", "DevMethod", "ReviewPullRequests", "OpenPullRequest")
 
 # ================= Core Functions =================
 
@@ -323,4 +324,74 @@ function Log-CobraActivity {
 
     # Append the log entry to the log file
     Add-Content -Path $logFilePath -Value $logEntry
+}
+
+function CheckHealth {
+    param (
+        [string]$target = "all" # Options: "all", "modules", "repositories"
+    )
+
+    Write-Host "Running health checks for: $target" -ForegroundColor Cyan
+
+    switch ($target) {
+        "all" {
+            CheckModulesHealth
+            CheckRepositoriesHealth
+        }
+        "modules" {
+            CheckModulesHealth
+        }
+        "repositories" {
+            CheckRepositoriesHealth
+        }
+        default {
+            Write-Host "Invalid target specified. Use 'all', 'modules', or 'repositories'." -ForegroundColor Red
+        }
+    }
+}
+
+function CheckModulesHealth {
+    Write-Host "Checking module health..." -ForegroundColor Yellow
+
+    foreach ($module in $global:CobraScriptModules.Keys) {
+        $modulePath = Join-Path $PSScriptRoot "Modules\$module"
+        $configPath = Join-Path $modulePath "config.ps1"
+
+        if (-not (Test-Path $modulePath)) {
+            Write-Host "Module '$module' is missing at path: $modulePath" -ForegroundColor Red
+        }
+        elseif (-not (Test-Path $configPath)) {
+            Write-Host "Module '$module' is missing its config.ps1 file at path: $configPath" -ForegroundColor Red
+        }
+        else {
+            Write-Host "Module '$module' is healthy." -ForegroundColor Green
+            Write-Host "Validating config.ps1 values for module '$module'..." -ForegroundColor Cyan
+
+            # Load the config.ps1 file
+            $config = . $configPath
+
+            foreach ($key in $requiredKeys) {
+                if (-not $config.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($config[$key])) {
+                    Write-Host "  Missing or empty value for key: $key" -ForegroundColor Red
+                }
+                else {
+                    Write-Host "  Key '$key' is set to: $($config[$key])" -ForegroundColor Green
+                }
+            }
+        }
+    }
+}
+
+function CheckRepositoriesHealth {
+    Write-Host "Checking repository health..." -ForegroundColor Yellow
+
+    foreach ($appConfig in $global:AppConfigs.GetEnumerator()) {
+        $repoPath = "$($global:CobraConfig.CodeRepo)\$($appConfig.Value.Repo)"
+        if (-not (Test-Path $repoPath)) {
+            Write-Host "Repository '$($appConfig.Key)' is missing at path: $repoPath" -ForegroundColor Red
+        }
+        else {
+            Write-Host "Repository '$($appConfig.Key)' is healthy." -ForegroundColor Green
+        }
+    }
 }

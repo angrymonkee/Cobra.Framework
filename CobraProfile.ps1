@@ -351,11 +351,6 @@ function GoToUrl([string]$url) {
 }
 
 #====================== Core COBRA METHODS =======================
-
-Load-CobraUtilityScripts
-Load-CobraJobScripts
-Import-CobraModules
-
 function Load-CobraUtilityScripts {
     try {
         $utilsFolder = Join-Path $PSScriptRoot "Utils"
@@ -396,6 +391,10 @@ function Load-CobraJobScripts {
         Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
+
+Load-CobraUtilityScripts
+Load-CobraJobScripts
+Import-CobraModules
 
 # Register tab completion for the 'repo' function
 Register-ArgumentCompleter -CommandName repo -ParameterName name -ScriptBlock {

@@ -33,4 +33,4 @@ function Invoke-CobraModuleValidation {
     $results
 }
 
-Export-ModuleMember -Function Invoke-ScriptAnalyzer2
+Export-ModuleMember -Function Invoke-CobraModuleValidation

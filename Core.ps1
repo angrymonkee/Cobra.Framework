@@ -395,3 +395,7 @@ function CheckRepositoriesHealth {
         }
     }
 }
+
+function Get-CobraConfig {
+    return $global:CobraConfig
+}

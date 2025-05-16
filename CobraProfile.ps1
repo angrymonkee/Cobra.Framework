@@ -1,5 +1,5 @@
 # Import COBRA configuration file
-. "$PSScriptRoot\config.ps1"
+. "$PSScriptRoot\sysconfig.ps1"
 
 if (-not ($global:coreScriptLoaded)) {
     . "$($global:CobraConfig.CobraRoot)/Core.ps1"
@@ -34,11 +34,14 @@ function repo ([string] $name) {
             return
         }
 
-        $repoLocation = "$($global:CobraConfig.CodeRepo)\$($appConfig.Repo)"
+        $repoLocation = "$($global:CobraConfig.CodeRepo)\$($appConfig.Repo)" # Check common code repo location
         if (-not (Test-Path $repoLocation)) {
-            Write-Host "Invalid repository location: $repoLocation. Check configuration." -ForegroundColor Red
-            Log-CobraActivity "Failed to load repository: $name. Invalid repository location: $repoLocation."
-            return
+            $repoLocation = "$($appConfig.Repo)" # Check absolute path
+            if (-not (Test-Path $repoLocation)) {
+                Write-Host "Invalid repository location: $repoLocation. Check configuration." -ForegroundColor Red
+                Log-CobraActivity "Failed to load repository: $name. Invalid repository location: $repoLocation."
+                return
+            }
         }
 
         GoToRepo($repoLocation)
@@ -418,13 +421,13 @@ function Update-CobraSystemConfiguration {
     Write-Host "Updating system configuration..."
 
     # Path to the config.ps1 file
-    $configFilePath = Join-Path $PSScriptRoot "config.ps1"
+    $configFilePath = Join-Path $PSScriptRoot "sysconfig.ps1"
 
-    # Check if config.ps1 exists
+    # Check if sysconfig.ps1 exists
     if (-not (Test-Path $configFilePath)) {
-        Write-Host "config.ps1 not found. Creating a new one..." -ForegroundColor Yellow
+        Write-Host "sysconfig.ps1 not found. Creating a new one..." -ForegroundColor Yellow
         New-Item -Path $configFilePath -ItemType File -Force | Out-Null
-        $global:CobraConfig = @{} # Initialize an empty hashtable if config.ps1 is missing
+        $global:CobraConfig = @{} # Initialize an empty hashtable if sysconfig.ps1 is missing
     }
 
     # Prompt the user for each key in $global:CobraConfig
@@ -438,7 +441,7 @@ function Update-CobraSystemConfiguration {
         }
     }
 
-    # Write updated values back to config.ps1
+    # Write updated values back to sysconfig.ps1
     $updatedConfigContent = @()
     $updatedConfigContent += "# Global settings for the application"
     $updatedConfigContent += "`$global:CobraConfig = @{"

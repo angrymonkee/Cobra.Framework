@@ -12,8 +12,7 @@ function DumpEventLog {
 
 # Open the hosts file in Notepad with elevated privileges
 function HostsFile {
-    # Start-Process notepad "$env:SystemRoot\System32\drivers\etc\hosts" -Verb runAs
-    write-host "Opening hosts file..."
+    Start-Process notepad "$env:SystemRoot\System32\drivers\etc\hosts" -Verb runAs
 }
 
 Export-ModuleMember -Function CleanEventLog, DumpEventLog, HostsFile

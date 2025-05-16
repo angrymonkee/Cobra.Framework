@@ -41,7 +41,7 @@ This will remove the reference to `CobraProfile.ps1` from your PowerShell profil
 Cobra.Framework/
 ├── Core.ps1           # Core framework functionality
 ├── Utils/             # Custom utility scripts
-├── config.ps1         # Global configuration file
+├── sysconfig.ps1         # Global configuration file
 └── Modules/           # Repository-specific modules
     └── Code/          # Example module for Code repository
         ├── Code.psm1  # Module implementation
@@ -50,12 +50,12 @@ Cobra.Framework/
 
 ## Global Configuration
 
-The `config.ps1` file is the global configuration file for the Cobra Framework. It defines key settings and environment variables required for the framework to function properly.
+The `sysconfig.ps1` file is the global configuration file for the Cobra Framework. It defines key settings and environment variables required for the framework to function properly.
 
 ### Example Configuration
 
 ```powershell
-# filepath: d:\Code\Cobra.Framework\config.ps1
+# filepath: d:\Code\Cobra.Framework\sysconfig.ps1
 @{
     CobraRoot = "C:\Path\To\Cobra\Framework"
     CodeRepo  = "C:\Path\To\Repositories"
@@ -73,7 +73,7 @@ The `config.ps1` file is the global configuration file for the Cobra Framework. 
 
 The global configuration file is automatically imported when the framework is loaded. To modify the configuration:
 
-1. Open the `config.ps1` file in the root directory.
+1. Open the `sysconfig.ps1` file in the root directory.
 2. Update the values as needed.
 3. Reload the framework to apply the changes.
 

@@ -1,5 +1,5 @@
 Archive/*
-GRTS/*
+Modules/GRTS/*
 Packages/*
 Report/*
 Modules/Garrison/*
@@ -11,5 +11,4 @@ Modules/Anaconda/*
 Modules/OpenAI/*
 Report_Scripts.ps1
 Utils/ExperimentalUtils.psm1
-config.ps1
 CobraActivity.log

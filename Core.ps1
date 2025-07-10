@@ -263,7 +263,23 @@ function GetCurrentAppConfig() {
 function VerifyInRepo([string]$repo) {
     $src = Get-Location
 
-    $cleanRepo = "$($global:CobraConfig.CodeRepo)\$($repo -replace "\\\\", "\")"
+    write-host "repo: $repo"
+    $cleanRepo = "$($repo -replace "\\\\", "\")"
+    write-host "cleanRepo: $cleanRepo"
+    if (-not (Test-Path $cleanRepo)) {
+        # Assume the repository is in the code repo
+        $cleanRepo = "$($global:CobraConfig.CodeRepo)\$($repo -replace "\\\\", "\")"
+        write-host "Checking code repo, cleanRepo: $cleanRepo"
+    }
+
+    # If path doesn't start with a drive letter, assume it's a relative path
+    # and join it with the current drive letter
+    if (-not ($cleanRepo -match "^[a-zA-Z]:\\")) {
+        $cleanRepo = Join-Path -Path "$($src.Drive.Name):" -ChildPath $cleanRepo
+        write-host "Relative path: $cleanRepo"
+    }
+
+    # If path doesn't match the current directory, return false
     if (-not $src.Path.Equals($cleanRepo)) {
         Write-Host "Please run this script from $cleanRepo repository."
         return $false

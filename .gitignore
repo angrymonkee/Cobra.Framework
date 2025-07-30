@@ -12,3 +12,4 @@ Modules/OpenAI/*
 Report_Scripts.ps1
 Utils/ExperimentalUtils.psm1
 CobraActivity.log
+sysconfig.ps1

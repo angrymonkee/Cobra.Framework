@@ -265,7 +265,7 @@ function VerifyInRepo([string]$repo) {
 
     write-host "repo: $repo"
     $cleanRepo = "$($repo -replace "\\\\", "\")"
-    write-host "cleanRepo: $cleanRepo"
+    # write-host "cleanRepo: $cleanRepo"
     if (-not (Test-Path $cleanRepo)) {
         # Assume the repository is in the code repo
         $cleanRepo = "$($global:CobraConfig.CodeRepo)\$($repo -replace "\\\\", "\")"

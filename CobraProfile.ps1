@@ -983,32 +983,32 @@ function CobraHelp {
     Write-Host "    modules <option>" -NoNewline
     write-host "  - Displays the available cobra modules. Modules contain custom logic for various repositories." -ForegroundColor DarkGray
     write-host "        add <name>" -NoNewline
-    write-host "     - Adds a new cobra profile" -ForegroundColor DarkGray
+    write-host "     - Adds a new cobra module" -ForegroundColor DarkGray
     Write-Host "        remove <name>" -NoNewline
-    write-host "  - Removes a cobra profile" -ForegroundColor DarkGray
+    write-host "  - Removes a cobra module" -ForegroundColor DarkGray
     Write-Host "        edit <name>" -NoNewline
-    write-host "    - Edits a cobra profile" -ForegroundColor DarkGray
+    write-host "    - Edits a cobra module" -ForegroundColor DarkGray
     Write-Host "        import <name> <artifactPath>" -NoNewline
-    write-host "  - Imports a cobra profile from an artifact" -ForegroundColor DarkGray
+    write-host "  - Imports a cobra module from an artifact" -ForegroundColor DarkGray
     Write-Host "        export <name> <artifactPath>" -NoNewline
-    write-host "  - Exports a cobra profile to an artifact" -ForegroundColor DarkGray
+    write-host "  - Exports a cobra module to an artifact" -ForegroundColor DarkGray
     Write-Host "        registry <action>" -NoNewline
-    write-host "        - Browse and manage the module registry" -ForegroundColor DarkGray
+    write-host "    - Browse and manage the module registry" -ForegroundColor DarkGray
     write-host "            list" -NoNewline
-    write-host "                    - List all modules in registry" -ForegroundColor DarkGray
+    write-host "             - List all modules in registry" -ForegroundColor DarkGray
     Write-Host "            info <name>" -NoNewline
-    write-host "             - Get detailed info about a module" -ForegroundColor DarkGray
+    write-host "      - Get detailed info about a module" -ForegroundColor DarkGray
     Write-Host "            search <term>" -NoNewline
-    write-host "           - Search for modules" -ForegroundColor DarkGray
+    write-host "    - Search for modules" -ForegroundColor DarkGray
     Write-Host "            open" -NoNewline
-    write-host "                    - Open registry folder in Explorer" -ForegroundColor DarkGray
+    write-host "             - Open registry folder in Explorer" -ForegroundColor DarkGray
     Write-Host "            push <name>" -NoNewline
-    write-host "           - Push a module to the registry" -ForegroundColor DarkGray
+    write-host "      - Push a module to the registry" -ForegroundColor DarkGray
     Write-Host "            pull <name>" -NoNewline
-    write-host "           - Pull a module from the registry" -ForegroundColor DarkGray
+    write-host "      - Pull a module from the registry" -ForegroundColor DarkGray
     Write-Host "    utils" -NoNewline
     write-host "  - Displays the available utility functions" -ForegroundColor DarkGray
-    Write-Host " health <target>" -NoNewline
+    Write-Host "    health <target>" -NoNewline
     write-host "    - Runs health checks for modules and repositories. Target can be 'all', 'modules', or 'repositories'." -ForegroundColor DarkGray
     Write-Host ""
 }

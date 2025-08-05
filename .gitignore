@@ -1,7 +1,6 @@
 Archive/*
-Modules/GRTS/*
 Packages/*
-Report/*
+Modules/GRTS/*
 Modules/Garrison/*
 Modules/Greenbelt/*
 Modules/GreenbeltCli/*

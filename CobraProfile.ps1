@@ -470,6 +470,172 @@ enum CobraModulesCommands {
     edit
     import
     export
+    registry
+}
+
+# Browse and explore the Cobra Module Registry
+function Browse-ModuleRegistry {
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("list", "info", "search", "open", "push", "pull")]
+        [string]$Action = "list",
+        
+        [Parameter(Mandatory = $false)]
+        [string]$ModuleName,
+        
+        [Parameter(Mandatory = $false)]
+        [string]$SearchTerm
+    )
+    
+    # Get the module registry location from global config
+    if (-not $global:CobraConfig.ModuleRegistryLocation) {
+        Write-Host "ModuleRegistryLocation is not configured in CobraConfig." -ForegroundColor Red
+        Write-Host "Please check your sysconfig.ps1 file." -ForegroundColor Yellow
+        return
+    }
+    
+    $registryPath = $global:CobraConfig.ModuleRegistryLocation
+    
+    # Check if the registry path exists
+    if (-not (Test-Path $registryPath)) {
+        Write-Host "Module registry path does not exist: $registryPath" -ForegroundColor Red
+        return
+    }
+    
+    switch ($Action) {
+        "list" {
+            Write-Host "COBRA MODULE REGISTRY" -ForegroundColor Cyan
+            Write-Host "Location: $registryPath" -ForegroundColor DarkGray
+            
+            $modules = Get-ChildItem -Path $registryPath -File | Sort-Object Name
+            
+            if ($modules.Count -eq 0) {
+                Write-Host "No modules found in the registry." -ForegroundColor Yellow
+                return
+            }
+            
+            foreach ($module in $modules) {
+                $size = [math]::Round($module.Length / 1KB, 2)
+                $lastModified = $module.LastWriteTime.ToString("yyyy-MM-dd HH:mm")
+                
+                Write-Host "  $($module.Name)" -ForegroundColor Green -NoNewline
+                Write-Host " ($size KB) - Modified: $lastModified" -ForegroundColor DarkGray
+            }
+            
+            Write-Host ""
+            Write-Host "Total modules: $($modules.Count)" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "Usage:" -ForegroundColor DarkGray
+            Write-Host "  cobra modules registry info <module-name>     # Get module details" -ForegroundColor DarkGray
+            Write-Host "  cobra modules registry search <search-term>   # Search modules" -ForegroundColor DarkGray
+            Write-Host "  cobra modules registry open                   # Open registry folder" -ForegroundColor DarkGray
+            Write-Host "  cobra modules registry push <module-name>     # Push module to registry" -ForegroundColor DarkGray
+            Write-Host "  cobra modules registry pull <module-name>     # Pull module from registry" -ForegroundColor DarkGray
+        }
+        "info" {
+            if (-not $ModuleName) {
+                Write-Host "Please provide a module name: cobra modules registry info <module-name>" -ForegroundColor Red
+                return
+            }
+            
+            $modulePath = Join-Path $registryPath $ModuleName
+            
+            if (-not (Test-Path $modulePath)) {
+                Write-Host "Module not found: $ModuleName" -ForegroundColor Red
+                Write-Host "Available modules:" -ForegroundColor Yellow
+                Get-ChildItem -Path $registryPath -File | ForEach-Object { Write-Host "  $($_.Name)" -ForegroundColor DarkGray }
+                return
+            }
+            
+            $moduleFile = Get-Item $modulePath
+            $size = [math]::Round($moduleFile.Length / 1KB, 2)
+            
+            Write-Host "MODULE INFORMATION" -ForegroundColor Cyan
+            Write-Host "Name: $($moduleFile.Name)" -ForegroundColor White
+            Write-Host "Size: $size KB" -ForegroundColor White
+            Write-Host "Created: $($moduleFile.CreationTime)" -ForegroundColor White
+            Write-Host "Modified: $($moduleFile.LastWriteTime)" -ForegroundColor White
+            Write-Host "Path: $($moduleFile.FullName)" -ForegroundColor DarkGray
+            
+            # Try to determine file type and show additional info
+            $extension = $moduleFile.Extension.ToLower()
+            switch ($extension) {
+                ".zip" { 
+                    Write-Host "Type: ZIP Archive" -ForegroundColor Green
+                    Write-Host "Use 'cobra modules import $($moduleFile.BaseName)' to install this module." -ForegroundColor Yellow
+                }
+                ".ps1" { 
+                    Write-Host "Type: PowerShell Script" -ForegroundColor Green 
+                }
+                ".psm1" { 
+                    Write-Host "Type: PowerShell Module" -ForegroundColor Green 
+                }
+                default { 
+                    Write-Host "Type: $($extension.TrimStart('.').ToUpper()) File" -ForegroundColor Green 
+                }
+            }
+        }
+        "search" {
+            if (-not $SearchTerm) {
+                Write-Host "Please provide a search term: cobra modules registry search <search-term>" -ForegroundColor Red
+                return
+            }
+            
+            Write-Host "SEARCHING MODULE REGISTRY" -ForegroundColor Cyan
+            Write-Host "Search term: '$SearchTerm'" -ForegroundColor DarkGray
+            
+            $matchingModules = Get-ChildItem -Path $registryPath -File | Where-Object { $_.Name -like "*$SearchTerm*" }
+            
+            if ($matchingModules.Count -eq 0) {
+                Write-Host "No modules found matching '$SearchTerm'" -ForegroundColor Yellow
+                return
+            }
+            
+            foreach ($module in $matchingModules) {
+                $size = [math]::Round($module.Length / 1KB, 2)
+                $highlightedName = $module.Name -replace [regex]::Escape($SearchTerm), "[$SearchTerm]"
+                
+                Write-Host "$highlightedName" -ForegroundColor Green -NoNewline
+                Write-Host " ($size KB)" -ForegroundColor DarkGray
+            }
+            
+            Write-Host ""
+            Write-Host "Found $($matchingModules.Count) matching modules." -ForegroundColor Cyan
+        }
+        "open" {
+            Write-Host "Opening module registry folder..." -ForegroundColor Green
+            try {
+                Start-Process explorer.exe -ArgumentList $registryPath
+                Write-Host "Registry folder opened: $registryPath" -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Error opening folder: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+        "push" {
+            if (-not $ModuleName) {
+                Write-Host "Please provide a module name: cobra modules registry push <module-name>" -ForegroundColor Red
+                return
+            }
+
+            Write-Host "Pushing module: $ModuleName"
+            
+            # Export module and push to registry
+            Export-CobraModule -moduleName $ModuleName -artifactPath $registryPath
+        }
+        "pull" {
+            if (-not $ModuleName) {
+                Write-Host "Please provide a module name: cobra modules registry pull <module-name>" -ForegroundColor Red
+                return
+            }
+
+            Write-Host "Pulling module: $ModuleName"
+            
+            # Import module from registry
+            $artifactPath = Join-Path $registryPath "$ModuleName.zip"
+            Import-CobraModule -moduleName $ModuleName -artifactPath $artifactPath
+        }
+    }
 }
 
 function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options) {
@@ -557,6 +723,13 @@ function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options
                 Write-Host "Invalid options for 'export'. Provide the name of the module and the artifact path." -ForegroundColor Red
             }
         }
+        registry {
+            $action = if ($options.Count -gt 0) { $options[0] } else { "list" }
+            $moduleName = if ($options.Count -gt 1) { $options[1] } else { $null }
+            $searchTerm = if ($options.Count -gt 1) { $options[1] } else { $null }
+            
+            Browse-ModuleRegistry -Action $action -ModuleName $moduleName -SearchTerm $searchTerm
+        }
         default {
             CobraHelp
         }
@@ -573,49 +746,6 @@ function ShowCobraScriptModules() {
         Write-Host " $($_.Key) " -NoNewline
         write-host "- $($_.Value[1])" -ForegroundColor DarkGray
     }
-}
-
-enum CobraGoCommands {
-    add
-    remove
-    update
-}
-function CobraGoDriver([CobraGoCommands] $command, [string[]] $options) {
-    switch ($command) {
-        add {
-            if ($options.Count -eq 3) {
-                # Pass parameters directly from the array
-                Add-GoLocation -name $options[0] -description $options[1] -url $options[2]
-            }
-            else {
-                Write-Host "Invalid options for 'add'. Provide name, description, and URL as arguments." -ForegroundColor Red
-            }
-        }
-        remove {
-            if ($options.Count -eq 1) {
-                # Pass the name directly to Remove-GoLocation
-                Remove-GoLocation -name $options[0]
-            }
-            else {
-                Write-Host "Invalid options for 'remove'. Provide the name as an argument." -ForegroundColor Red
-            }
-        }
-        update {
-            if ($options.Count -eq 3) {
-                # Pass parameters directly from the array
-                Update-GoLocation -name $options[0] -description $options[1] -url $options[2]
-            }
-            else {
-                Write-Host "Invalid options for 'update'. Provide name, description, and URL as arguments." -ForegroundColor Red
-            }
-        }
-        default {
-            Write-Host "Invalid command. Type 'cobra go' for usage."
-        }
-    }
-
-    # Log 'go' location operations
-    Log-CobraActivity "Executed $command command with options: $($options -join ', ')"
 }
 
 function Import-CobraModule {
@@ -708,6 +838,49 @@ function Export-CobraModule {
     Compress-Archive -Path $modulePath -DestinationPath $tempArchivePath -Force
     Move-Item -Path $tempArchivePath -Destination $artifactPath -Force
     Write-Host "Module '$moduleName' exported as artifact to $artifactPath." -ForegroundColor Green
+}
+
+enum CobraGoCommands {
+    add
+    remove
+    update
+}
+function CobraGoDriver([CobraGoCommands] $command, [string[]] $options) {
+    switch ($command) {
+        add {
+            if ($options.Count -eq 3) {
+                # Pass parameters directly from the array
+                Add-GoLocation -name $options[0] -description $options[1] -url $options[2]
+            }
+            else {
+                Write-Host "Invalid options for 'add'. Provide name, description, and URL as arguments." -ForegroundColor Red
+            }
+        }
+        remove {
+            if ($options.Count -eq 1) {
+                # Pass the name directly to Remove-GoLocation
+                Remove-GoLocation -name $options[0]
+            }
+            else {
+                Write-Host "Invalid options for 'remove'. Provide the name as an argument." -ForegroundColor Red
+            }
+        }
+        update {
+            if ($options.Count -eq 3) {
+                # Pass parameters directly from the array
+                Update-GoLocation -name $options[0] -description $options[1] -url $options[2]
+            }
+            else {
+                Write-Host "Invalid options for 'update'. Provide name, description, and URL as arguments." -ForegroundColor Red
+            }
+        }
+        default {
+            Write-Host "Invalid command. Type 'cobra go' for usage."
+        }
+    }
+
+    # Log 'go' location operations
+    Log-CobraActivity "Executed $command command with options: $($options -join ', ')"
 }
 
 #=================== Script Information ===================
@@ -819,6 +992,20 @@ function CobraHelp {
     write-host "  - Imports a cobra profile from an artifact" -ForegroundColor DarkGray
     Write-Host "        export <name> <artifactPath>" -NoNewline
     write-host "  - Exports a cobra profile to an artifact" -ForegroundColor DarkGray
+    Write-Host "        registry <action>" -NoNewline
+    write-host "        - Browse and manage the module registry" -ForegroundColor DarkGray
+    write-host "            list" -NoNewline
+    write-host "                    - List all modules in registry" -ForegroundColor DarkGray
+    Write-Host "            info <name>" -NoNewline
+    write-host "             - Get detailed info about a module" -ForegroundColor DarkGray
+    Write-Host "            search <term>" -NoNewline
+    write-host "           - Search for modules" -ForegroundColor DarkGray
+    Write-Host "            open" -NoNewline
+    write-host "                    - Open registry folder in Explorer" -ForegroundColor DarkGray
+    Write-Host "            push <name>" -NoNewline
+    write-host "           - Push a module to the registry" -ForegroundColor DarkGray
+    Write-Host "            pull <name>" -NoNewline
+    write-host "           - Pull a module from the registry" -ForegroundColor DarkGray
     Write-Host "    utils" -NoNewline
     write-host "  - Displays the available utility functions" -ForegroundColor DarkGray
     Write-Host " health <target>" -NoNewline

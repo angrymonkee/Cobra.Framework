@@ -106,7 +106,7 @@ function Load-CobraUtilityScripts {
         }
 
         Get-ChildItem -Path $utilsFolder -Filter *.psm1 | ForEach-Object {
-            Write-Host "Loading utility script: $($_.FullName)"
+            # Write-Host "Loading utility script: $($_.FullName)"
             Import-Module $_.FullName -Force -DisableNameChecking
 
         }
@@ -127,7 +127,7 @@ function Load-CobraJobScripts {
         }
 
         Get-ChildItem -Path $jobsFolder -Filter *.psm1 | ForEach-Object {
-            Write-Host "Loading job script: $($_.FullName)"
+            # Write-Host "Loading job script: $($_.FullName)"
             Import-Module $_.FullName -Force -DisableNameChecking
         }
     }
@@ -393,6 +393,7 @@ function CobraDriver([CobraCommand] $command, [string[]] $options) {
         }
     }
 }
+
 function cobra {
     param (
         [CobraCommand]$command

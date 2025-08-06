@@ -11,11 +11,6 @@
 
 ### Changed
 
-- Updated sysconfig.ps1 with specific user configuration:
-  - Set OwnerEmail to 'dajon@microsoft.com'
-  - Set CobraRoot to 'D:\Code\Cobra.Framework'
-  - Set ModuleRegistryLocation to 'Z:\Share\CobraModuleRegistry'
-  - Set CodeRepo to 'D:\Code'
 - Enhanced code repo path handling to support switching between drives (commit 823ac68)
 - Updated sysconfig to accommodate common repo locations and absolute paths (commit a8d84d7)
 - Updated validation logic and jobs (commit c25b5af)

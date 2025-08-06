@@ -6,6 +6,8 @@ if (-not ($global:coreScriptLoaded)) {
     . "$($global:CobraConfig.CobraRoot)/Core.ps1"
 }
 
+Log-CobraActivity "Loading development command scripts..."
+
 function AuthApp {
     $src = Get-Location
 

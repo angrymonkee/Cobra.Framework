@@ -6,6 +6,8 @@ if (-not ($global:coreScriptLoaded)) {
     . "$($global:CobraConfig.CobraRoot)/Core.ps1"
 }
 
+Log-CobraActivity "Loading 'go' command scripts..."
+
 function go ([string] $name) {
     try {
         if ($null -ne $global:goTaskStore -and $global:goTaskStore.ContainsKey($name) -eq $true) {

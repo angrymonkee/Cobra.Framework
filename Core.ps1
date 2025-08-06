@@ -259,7 +259,6 @@ function GetCurrentAppConfig() {
     return $global:currentAppConfig
 }
 
-# ================= Shared Functions =================
 function VerifyInRepo([string]$repo) {
     $src = Get-Location
 
@@ -423,3 +422,5 @@ function GoToRepo([string]$repo) {
 function GoToUrl([string]$url) {
     Start-Process $url
 }
+
+Log-CobraActivity "Core scripts loaded."

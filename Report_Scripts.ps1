@@ -2,6 +2,8 @@ if (-not ($global:coreScriptLoaded)) {
     . "$env:COBRA_ROOT/Core.ps1"
 }
 
+Log-CobraActivity "Loading Reporting Scripts..."
+
 # COBRA Setup
 $commandName = "reporting"
 $global:CobraScriptModules[$commandName] = @("Scripts for showing reports", "Report_Scripts.ps1")

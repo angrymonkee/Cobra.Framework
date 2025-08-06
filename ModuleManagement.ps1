@@ -6,6 +6,7 @@ if (-not ($global:coreScriptLoaded)) {
     . "$($global:CobraConfig.CobraRoot)/Core.ps1"
 }
 
+Log-CobraActivity "Loading module management scripts..."
 
 enum CobraModulesCommands {
     add

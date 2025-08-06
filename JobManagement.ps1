@@ -6,10 +6,31 @@ if (-not ($global:coreScriptLoaded)) {
     . "$($global:CobraConfig.CobraRoot)/Core.ps1"
 }
 
+Log-CobraActivity "Loading job management scripts..."
+
 # Global store for registered jobs
 $global:CobraJobs = @{
 }
 
+function Load-CobraJobScripts {
+    try {
+        $jobsFolder = Join-Path $PSScriptRoot "Jobs"
+        Write-Host "Loading job scripts from: $jobsFolder"
+        if (-not (Test-Path $jobsFolder)) {
+            New-Item -Path $jobsFolder -ItemType Directory | Out-Null
+            Write-Host "Created Jobs folder at: $jobsFolder"
+        }
+
+        Get-ChildItem -Path $jobsFolder -Filter *.psm1 | ForEach-Object {
+            # Write-Host "Loading job script: $($_.FullName)"
+            Import-Module $_.FullName -Force -DisableNameChecking
+        }
+    }
+    catch {
+        Write-Host "Failed to load script: $($_.FullName)" -ForegroundColor Red
+        Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
 
 # Example usage:
 # Register-CobraJob -name "DailyBackup" -type "scheduled" -action { Write-Host "Running backup..." } -schedule "02:00"

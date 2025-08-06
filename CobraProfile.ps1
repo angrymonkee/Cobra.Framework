@@ -26,6 +26,8 @@ if (-not $global:jobManagementScriptLoaded) {
     . "$($global:CobraConfig.CobraRoot)/JobManagement.ps1"
 }
 
+Log-CobraActivity "Loaded COBRA driver."
+
 #====================== COBRA METHODS =======================
 # Function to navigate to the desired code repository
 function repo ([string] $name) {
@@ -109,26 +111,6 @@ function Load-CobraUtilityScripts {
             # Write-Host "Loading utility script: $($_.FullName)"
             Import-Module $_.FullName -Force -DisableNameChecking
 
-        }
-    }
-    catch {
-        Write-Host "Failed to load script: $($_.FullName)" -ForegroundColor Red
-        Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-    }
-}
-
-function Load-CobraJobScripts {
-    try {
-        $jobsFolder = Join-Path $PSScriptRoot "Jobs"
-        Write-Host "Loading job scripts from: $jobsFolder"
-        if (-not (Test-Path $jobsFolder)) {
-            New-Item -Path $jobsFolder -ItemType Directory | Out-Null
-            Write-Host "Created Jobs folder at: $jobsFolder"
-        }
-
-        Get-ChildItem -Path $jobsFolder -Filter *.psm1 | ForEach-Object {
-            # Write-Host "Loading job script: $($_.FullName)"
-            Import-Module $_.FullName -Force -DisableNameChecking
         }
     }
     catch {

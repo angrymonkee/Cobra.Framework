@@ -415,3 +415,11 @@ function CheckRepositoriesHealth {
 function Get-CobraConfig {
     return $global:CobraConfig
 }
+
+function GoToRepo([string]$repo) {
+    Set-Location -Path $repo
+}
+
+function GoToUrl([string]$url) {
+    Start-Process $url
+}

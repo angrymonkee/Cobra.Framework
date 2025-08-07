@@ -128,6 +128,7 @@ function Show-CobraDashboard {
     Write-Host "║ ⚡ Quick Actions                                                             ║" -ForegroundColor Yellow
     Write-Host "║   [B]uild    [T]est     [R]un      [P]R Prep   [A]uth     [S]etup            ║" -ForegroundColor White
     Write-Host "║   [I]nfo     [L]ogs     [M]odules  [G]it       [H]elp     [Q]uit             ║" -ForegroundColor White
+    Write-Host "║   [E]mplates [U]tils    [V]iew      [N]ew                                    ║" -ForegroundColor White
     Write-Host "║                                                                              ║" -ForegroundColor Cyan
     
     # Recent Activity Section
@@ -235,6 +236,30 @@ function Show-CobraDashboard {
                 'H' { 
                     Write-Host "H" -ForegroundColor Green
                     CobraHelp
+                    break
+                }
+                'E' { 
+                    Write-Host "E" -ForegroundColor Green
+                    Write-Host "Templates & Snippets..." -ForegroundColor Yellow
+                    cobra templates
+                    break
+                }
+                'U' { 
+                    Write-Host "U" -ForegroundColor Green
+                    Write-Host "Utility functions..." -ForegroundColor Yellow
+                    cobra utils
+                    break
+                }
+                'V' { 
+                    Write-Host "V" -ForegroundColor Green
+                    Write-Host "View recent logs..." -ForegroundColor Yellow
+                    Show-CobraLogs -Action view -Lines 20
+                    break
+                }
+                'N' { 
+                    Write-Host "N" -ForegroundColor Green
+                    Write-Host "Template wizard..." -ForegroundColor Yellow
+                    cobra templates wizard
                     break
                 }
                 'Q' { 

@@ -31,6 +31,11 @@ if (-not $global:cobraDashboardScriptLoaded) {
     . "$($global:CobraConfig.CobraRoot)/CobraDashboard.ps1"
 }
 
+# Load templates management
+if (-not $global:templatesManagementScriptLoaded) {
+    . "$($global:CobraConfig.CobraRoot)/TemplatesManagement.ps1"
+}
+
 Log-CobraActivity "Loaded COBRA driver."
 
 # Log profile load
@@ -208,6 +213,7 @@ enum CobraCommand {
     health
     dashboard
     logs
+    templates
 }
 
 function ShowUtilityFunctions {
@@ -305,7 +311,7 @@ function CobraHelp {
     Write-Host "    modules <option>" -NoNewline
     write-host "   - Displays the available cobra modules. Modules contain custom logic for various repositories." -ForegroundColor DarkGray
     write-host "        add <name>" -NoNewline
-    write-host "     - Adds a new cobra module" -ForegroundColor DarkGray
+    write-host "     - Creates a new cobra module using templates" -ForegroundColor DarkGray
     Write-Host "        remove <name>" -NoNewline
     write-host "  - Removes a cobra module" -ForegroundColor DarkGray
     Write-Host "        edit <name>" -NoNewline
@@ -328,6 +334,26 @@ function CobraHelp {
     write-host "      - Push a module to the registry" -ForegroundColor DarkGray
     Write-Host "            pull <name>" -NoNewline
     write-host "      - Pull a module from the registry" -ForegroundColor DarkGray
+    Write-Host "    templates <option>" -NoNewline
+    write-host "    - Template and snippet management for rapid code reuse (built-in)" -ForegroundColor DarkGray
+    Write-Host "        list [category]" -NoNewline
+    write-host "     - List available templates (module/function/snippet)" -ForegroundColor DarkGray
+    Write-Host "        new <template> <name>" -NoNewline
+    write-host " - Create new module from template" -ForegroundColor DarkGray
+    Write-Host "        snippet <name>" -NoNewline
+    write-host "      - Copy snippet to clipboard" -ForegroundColor DarkGray
+    Write-Host "        save <name> <type>" -NoNewline
+    write-host "   - Save current code as template" -ForegroundColor DarkGray
+    Write-Host "        search <term>" -NoNewline
+    write-host "      - Search for templates and snippets" -ForegroundColor DarkGray
+    Write-Host "        wizard [type]" -NoNewline
+    write-host "       - Interactive template creation wizard" -ForegroundColor DarkGray
+    Write-Host "        registry" -NoNewline
+    write-host "           - Browse team template registry" -ForegroundColor DarkGray
+    Write-Host "        publish <name>" -NoNewline
+    write-host "     - Share template with team" -ForegroundColor DarkGray
+    Write-Host "        import <name>" -NoNewline
+    write-host "       - Import template from registry" -ForegroundColor DarkGray
     Write-Host "    utils" -NoNewline
     write-host "  - Displays the available utility functions" -ForegroundColor DarkGray
     Write-Host "    health <target>" -NoNewline
@@ -536,6 +562,113 @@ function CobraDriver([CobraCommand] $command, [string[]] $options) {
                 }
                 default {
                     Write-Host "Invalid log option: $option" -ForegroundColor Red
+                }
+            }
+        }
+        templates {
+            if ($options.Count -eq 0) {
+                # Show available templates
+                Write-Host "COBRA TEMPLATES & SNIPPETS" -ForegroundColor Cyan
+                Write-Host "============================" -ForegroundColor Cyan
+                $templates = Get-CobraTemplates
+                if ($templates) {
+                    $templates | Format-Table Name, Type, Description -AutoSize
+                }
+                else {
+                    Write-Host "No templates available. Use 'Initialize-TemplateDirectories' to set up template directories." -ForegroundColor Yellow
+                }
+                return
+            }
+
+            $subCommand = $options[0]
+            $remainingOptions = $options[1..($options.Count - 1)]
+            
+            switch ($subCommand) {
+                "list" {
+                    $category = if ($remainingOptions.Count -gt 0) { $remainingOptions[0] } else { "all" }
+                    $templates = Get-CobraTemplates -Category $category
+                    if ($templates) {
+                        Write-Host "AVAILABLE TEMPLATES - Category: $($category.ToUpper())" -ForegroundColor Cyan
+                        $templates | Format-Table Name, Type, Description, Author -AutoSize
+                    }
+                    else {
+                        Write-Host "No templates found for category: $category" -ForegroundColor Yellow
+                    }
+                }
+                "new" {
+                    if ($remainingOptions.Count -lt 2) {
+                        Write-Host "Usage: cobra templates new <template-name> <new-module-name>" -ForegroundColor Red
+                        return
+                    }
+                    $templateName = $remainingOptions[0]
+                    $moduleName = $remainingOptions[1]
+                    New-CobraModuleFromTemplate -TemplateName $templateName -ModuleName $moduleName
+                }
+                "snippet" {
+                    if ($remainingOptions.Count -eq 0) {
+                        Write-Host "Usage: cobra templates snippet <snippet-name>" -ForegroundColor Red
+                        return
+                    }
+                    $snippetName = $remainingOptions[0]
+                    Copy-CobraSnippet -SnippetName $snippetName
+                }
+                "search" {
+                    if ($remainingOptions.Count -eq 0) {
+                        Write-Host "Usage: cobra templates search <search-term>" -ForegroundColor Red
+                        return
+                    }
+                    $searchTerm = $remainingOptions[0]
+                    $templates = Get-CobraTemplates -SearchTerm $searchTerm
+                    if ($templates) {
+                        Write-Host "SEARCH RESULTS FOR: '$searchTerm'" -ForegroundColor Cyan
+                        $templates | Format-Table Name, Type, Description, Author -AutoSize
+                    }
+                    else {
+                        Write-Host "No templates found matching: $searchTerm" -ForegroundColor Yellow
+                    }
+                }
+                "save" {
+                    Write-Host "Save template functionality requires additional parameters." -ForegroundColor Yellow
+                    Write-Host "Usage: cobra templates save <name> <type> -SourcePath <path>" -ForegroundColor Yellow
+                }
+                "wizard" {
+                    $type = if ($remainingOptions.Count -gt 0 -and $remainingOptions[0] -in @("module", "function", "snippet")) { 
+                        $remainingOptions[0] 
+                    }
+                    else { 
+                        "module" 
+                    }
+                    Start-CobraTemplateWizard -Type $type
+                }
+                "registry" {
+                    $registryTemplates = Get-CobraTemplateRegistry
+                    if ($registryTemplates) {
+                        Write-Host "TEAM TEMPLATE REGISTRY" -ForegroundColor Cyan
+                        $registryTemplates | Format-Table Name, Type, Description, Author, Modified -AutoSize
+                    }
+                    else {
+                        Write-Host "Template registry not accessible or empty." -ForegroundColor Yellow
+                    }
+                }
+                "publish" {
+                    if ($remainingOptions.Count -eq 0) {
+                        Write-Host "Usage: cobra templates publish <template-name>" -ForegroundColor Red
+                        return
+                    }
+                    $templateName = $remainingOptions[0]
+                    Publish-CobraTemplate -Name $templateName
+                }
+                "import" {
+                    if ($remainingOptions.Count -eq 0) {
+                        Write-Host "Usage: cobra templates import <template-name>" -ForegroundColor Red
+                        return
+                    }
+                    $templateName = $remainingOptions[0]
+                    Import-CobraTemplate -Name $templateName
+                }
+                default {
+                    Write-Host "Invalid templates subcommand: $subCommand" -ForegroundColor Red
+                    Write-Host "Available subcommands: list, new, snippet, search, save, wizard, registry, publish, import" -ForegroundColor Yellow
                 }
             }
         }

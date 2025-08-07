@@ -187,27 +187,42 @@ function CobraModulesDriver([CobraModulesCommands] $command, [string[]] $options
         add {
             if ($options.Count -eq 1) {
                 $moduleName = $options[0]
+                
+                # Check if module already exists
                 $modulePath = Join-Path $PSScriptRoot "Modules\$moduleName"
-                if (-not (Test-Path $modulePath)) {
-                    New-Item -Path $modulePath -ItemType Directory
-                    New-Item -Path "$modulePath\$moduleName.psm1" -ItemType File
-                    New-Item -Path "$modulePath\config.ps1" -ItemType File
-
-                    New-ModuleConfigFile "$moduleName"
-                    New-ModuleTemplate "$moduleName"
-                    $global:CobraScriptModules[$moduleName] = @($moduleName, $moduleName)
-
-                    Import-Module $modulePath -Force -DisableNameChecking
-                    # Initialize the module
-                    & "Initialize-$($moduleName)Module"
-                    Write-Host "Created new module: $moduleName"
-                }
-                else {
+                if (Test-Path $modulePath) {
                     Write-Host "Module already exists: $moduleName" -ForegroundColor Red
+                    return
                 }
+                
+                # Use template system to create the module
+                Write-Host "Creating new module '$moduleName' using template system..." -ForegroundColor Green
+                
+                # Get available module templates
+                $templates = Get-CobraTemplates -Category "module"
+                
+                $templatePath = Join-Path $PSScriptRoot "Templates"
+                if ($templates.Count -eq 0) {
+                    Write-Host "No module templates available! Please run 'Initialize-TemplateDirectories' or ensure templates are properly configured." -ForegroundColor Red
+                    Write-Host "Template location: $($global:CobraConfig.templatePath)" -ForegroundColor Yellow
+                    return
+                }
+                
+                # Use basic-module template by default
+                $defaultTemplate = $templates | Where-Object { $_.Name -eq "basic-module" } | Select-Object -First 1
+                if (-not $defaultTemplate) {
+                    $defaultTemplate = $templates[0]  # Use first available if basic-module not found
+                }
+                
+                Write-Host "Using template: $($defaultTemplate.Name)" -ForegroundColor Cyan
+                New-CobraModuleFromTemplate -TemplateName $defaultTemplate.Name -ModuleName $moduleName
+                
+                Log-CobraActivity "Created new module '$moduleName' via cobra modules add using template '$($defaultTemplate.Name)'"
             }
             else {
                 Write-Host "Invalid options for 'add'. Provide the name of the module to add." -ForegroundColor Red
+                Write-Host "Usage: cobra modules add <module-name>" -ForegroundColor Yellow
+                Write-Host "Alternative: Use 'cobra templates new <template-name> <module-name>' for template-specific creation" -ForegroundColor Yellow
             }
         }
         edit {

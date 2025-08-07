@@ -62,9 +62,9 @@ cobra modules
 cobra health
 
 # View and manage activity logs
-Show-CobraLogs -Action view -Lines 10
-Show-CobraLogs -Action search -SearchTerm "Build"
-Show-CobraLogs -Action clear
+cobra logs view -Lines 10
+cobra logs search -SearchTerm "Build"
+cobra logs clear
 
 # Get help
 cobra help
@@ -301,18 +301,13 @@ Cobra Framework automatically logs user activities to `CobraActivity.log` for de
 
 ```powershell
 # View recent logs
-Show-CobraLogs -Action view -Lines 100
+cobra logs view 100
 
 # Search for specific activities
-Show-CobraLogs -Action search -SearchTerm "Build"
-Show-CobraLogs -Action search -SearchTerm "Dashboard"
+cobra logs search "Build"
+cobra logs search "Dashboard"
 
 # Clear logs (creates backup)
-Show-CobraLogs -Action clear
-
-# Legacy commands (still supported)
-cobra logs view 100
-cobra logs search "GRTS"
 cobra logs clear
 ```
 
@@ -341,10 +336,10 @@ All AI responses are formatted in markdown for better readability and sharing.
 Browse and discover modules in your registry:
 
 ```powershell
-Browse-ModuleRegistry                    # List all modules
-Browse-ModuleRegistry -Action info -ModuleName "MyModule.zip"
-Browse-ModuleRegistry -Action search -SearchTerm "GRTS"
-Browse-ModuleRegistry -Action open      # Open registry folder
+cobra modules registry list                 # List all modules
+cobra modules registry info "MyModule"      # Information about module
+cobra modules registry search "MyModule"    # Search for module
+cobra modules registry open                 # Open registry folder
 ```
 
 ## Recent Updates
@@ -357,16 +352,6 @@ Browse-ModuleRegistry -Action open      # Open registry folder
 - **Git Integration** - Live branch status and change tracking
 - **Enhanced Log Management** - Advanced search, filtering, and integrated dashboard view
 - **Dashboard Aliases** - `cdash` and `cdashi` for quick access
-
-### Previous Updates
-
-- Added comprehensive activity logging with search and management capabilities
-- Integrated AI-powered text generation with markdown output
-- Enhanced module registry browsing and discovery
-- Improved error handling and operator precedence fixes
-- Added Base64 decoding utilities
-- Enhanced build system with multiple build types support
-- Expanded utility functions for system administration
 
 ## Contributing
 

@@ -28,7 +28,18 @@ if (-not $global:jobManagementScriptLoaded) {
 
 Log-CobraActivity "Loaded COBRA driver."
 
-#====================== COBRA METHODS =======================
+# ================== Dashboard Initialization ==================
+# Initialize dashboard features when profile loads
+try {
+    Enable-CobraDashboardHotkey
+}
+catch {
+    # Hotkey registration failed, but don't break the profile load
+}
+
+# Log profile load
+Log-CobraActivity "Cobra Framework profile loaded with Context Dashboard enabled"
+
 # Function to navigate to the desired code repository
 function repo ([string] $name) {
     try {
@@ -199,6 +210,8 @@ enum CobraCommand {
     env
     utils
     health
+    dashboard
+    logs
 }
 
 function ShowUtilityFunctions {
@@ -263,9 +276,9 @@ function CobraHelp {
     Write-Host ""
     Write-Host -ForegroundColor DarkGray "NAV COMMANDS:"
     Write-Host " repo" -NoNewline
-    write-host "            - Allows you to switch between various developer code repositories. Type 'repo' for specific help." -ForegroundColor DarkGray
+    write-host "      - Allows you to switch between various developer code repositories. Type 'repo' for specific help." -ForegroundColor DarkGray
     Write-Host " go" -NoNewline
-    write-host "              - Allows you to navigate to various tasks. Type 'go' for specific help." -ForegroundColor DarkGray
+    write-host "        - Allows you to navigate to various tasks. Type 'go' for specific help." -ForegroundColor DarkGray
     Write-Host ""
     ShowUtilityFunctions
     Write-Host -ForegroundColor DarkGray "COBRA CONFIG & SETUP COMMANDS:"
@@ -283,10 +296,18 @@ function CobraHelp {
     Write-host "                      - Removes a go location" -ForegroundColor DarkGray
     Write-Host "        update <name> <description> <url>" -NoNewline
     Write-host "  - Updates a go location" -ForegroundColor DarkGray
+    Write-Host "    logs <option>" -NoNewline
+    write-host "      - Displays the cobra logs" -ForegroundColor DarkGray
+    Write-Host "        search <term>" -NoNewline
+    write-host "  - Searches the cobra logs" -ForegroundColor DarkGray
+    Write-Host "        view [lines]" -NoNewline
+    write-host "   - Displays the last N lines of the cobra logs (Default: 20)." -ForegroundColor DarkGray
+    write-host "        clear" -NoNewline
+    Write-Host "          - Clears the cobra activity log." -ForegroundColor DarkGray
     Write-Host "    help" -NoNewline
-    write-host "           - Displays this help information" -ForegroundColor DarkGray
+    write-host "               - Displays this help information" -ForegroundColor DarkGray
     Write-Host "    modules <option>" -NoNewline
-    write-host "  - Displays the available cobra modules. Modules contain custom logic for various repositories." -ForegroundColor DarkGray
+    write-host "   - Displays the available cobra modules. Modules contain custom logic for various repositories." -ForegroundColor DarkGray
     write-host "        add <name>" -NoNewline
     write-host "     - Adds a new cobra module" -ForegroundColor DarkGray
     Write-Host "        remove <name>" -NoNewline
@@ -315,8 +336,416 @@ function CobraHelp {
     write-host "  - Displays the available utility functions" -ForegroundColor DarkGray
     Write-Host "    health <target>" -NoNewline
     write-host "    - Runs health checks for modules and repositories. Target can be 'all', 'modules', or 'repositories'." -ForegroundColor DarkGray
+    Write-Host "    dashboard [-i]" -NoNewline
+    write-host "   - Show context-aware dashboard. Use -i for interactive mode with quick actions." -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "📋 DASHBOARD FEATURES" -ForegroundColor Yellow
+    Write-Host "  • Context awareness - shows current location, git status, repository info"
+    Write-Host "  • Status monitoring - displays build/test results and timing"
+    Write-Host "  • Quick actions - single-key access to common commands ([B]uild, [T]est, [R]un, etc.)"
+    Write-Host "  • Recent activity - shows last 5 framework activities"
+    Write-Host "  • Log management - integrated log viewing and searching"
+    Write-Host "  • Hotkey access - Press Ctrl+D from anywhere to open dashboard (when available)"
+    Write-Host "  • Aliases: " -NoNewline -ForegroundColor DarkGray
+    Write-Host "'dash'" -NoNewline -ForegroundColor Cyan
+    Write-Host " and " -NoNewline -ForegroundColor DarkGray
+    Write-Host "'dashboard'" -ForegroundColor Cyan
     Write-Host ""
 }
+
+# ================== Context-Aware Dashboard ==================
+
+function Show-CobraDashboard {
+    [CmdletBinding()]
+    param(
+        [switch]$Interactive
+    )
+
+    # Get current context information
+    $currentLocation = Get-Location
+    $currentConfig = $null
+    if ($global:currentAppConfig) {
+        $currentConfig = $global:currentAppConfig
+    }
+    $gitBranch = $null
+    $gitStatus = $null
+    $buildStatus = "Unknown"
+    $testStatus = "Unknown"
+    $lastBuildTime = $null
+    $lastTestTime = $null
+    
+    # Try to get Git information
+    try {
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            $gitBranch = git rev-parse --abbrev-ref HEAD 2>$null
+            $gitStatus = git status --porcelain 2>$null
+        }
+    }
+    catch { 
+        # Git not available or not in a git repo
+    }
+    
+    # Try to get build/test status from logs
+    try {
+        $logPath = Join-Path $PSScriptRoot "CobraActivity.log"
+        if (Test-Path $logPath) {
+            $recentLogs = Get-Content $logPath -Tail 100
+            $lastBuild = $recentLogs | Where-Object { $_ -match "BuildApp|Built.*successfully|Build.*failed" } | Select-Object -Last 1
+            $lastTest = $recentLogs | Where-Object { $_ -match "TestApp|Test.*successfully|Test.*failed" } | Select-Object -Last 1
+            
+            if ($lastBuild) {
+                $lastBuildTime = ($lastBuild -split " - ")[0]
+                $buildStatus = if ($lastBuild -match "successfully|completed|Success") { "✅ Success" } else { "❌ Failed" }
+            }
+            
+            if ($lastTest) {
+                $lastTestTime = ($lastTest -split " - ")[0]
+                $testStatus = if ($lastTest -match "successfully|passed|Success") { "✅ Success" } else { "❌ Failed" }
+            }
+        }
+    }
+    catch {
+        # Log parsing failed
+    }
+    
+    # Display the dashboard
+    Write-Host "╔══════════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "║                           🐍 COBRA CONTEXT DASHBOARD                         ║" -ForegroundColor Cyan
+    Write-Host "╠══════════════════════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
+    
+    # Current Context Section
+    Write-Host "║ 📍 Current Context                                                           ║" -ForegroundColor Yellow
+    Write-Host "║   Location:   " -NoNewline -ForegroundColor White
+    $locationText = $currentLocation.Path
+    if ($locationText.Length -gt 60) { $locationText = "..." + $locationText.Substring($locationText.Length - 57) }
+    Write-Host ("{0,-60}" -f $locationText) -NoNewline -ForegroundColor Gray
+    Write-Host "   ║" -ForegroundColor Cyan
+    
+    if ($currentConfig) {
+        Write-Host "║   Repository: " -NoNewline -ForegroundColor White
+        Write-Host ("{0,-60}" -f $currentConfig.Name) -NoNewline -ForegroundColor Green
+        Write-Host "   ║" -ForegroundColor Cyan
+    }
+    
+    if ($gitBranch) {
+        Write-Host "║   Git Branch: " -NoNewline -ForegroundColor White
+        $branchColor = if ($gitBranch -eq "main" -or $gitBranch -eq "master") { "Green" } else { "Yellow" }
+        Write-Host ("{0,-60}" -f $gitBranch) -NoNewline -ForegroundColor $branchColor
+        Write-Host "   ║" -ForegroundColor Cyan
+        
+        $statusText = if ($gitStatus) { "📝 $($gitStatus.Count) changes" } else { "✅ Clean" }
+        Write-Host "║   Git Status: " -NoNewline -ForegroundColor White
+        Write-Host ("{0,-60}" -f $statusText) -NoNewline -ForegroundColor $(if ($gitStatus) { "Yellow" } else { "Green" })
+        Write-Host "   ║" -ForegroundColor Cyan
+    }
+    
+    Write-Host "║                                                                              ║" -ForegroundColor Cyan
+    
+    # Status Section
+    Write-Host "║ 📊 Status                                                                    ║" -ForegroundColor Yellow
+    Write-Host "║   Last Build: " -NoNewline -ForegroundColor White
+    Write-Host ("{0,-23}" -f $buildStatus) -NoNewline -ForegroundColor $(if ($buildStatus -match "Success") { "Green" } else { "Red" })
+    if ($lastBuildTime) {
+        $timeOnly = ($lastBuildTime -split " ")[1]
+        Write-Host (" ({0})" -f $timeOnly) -NoNewline -ForegroundColor Gray
+        Write-Host ("{0,22}" -f " ") -NoNewline
+    }
+    else {
+        Write-Host ("{0,32}" -f " ") -NoNewline
+    }
+    Write-Host "      ║" -ForegroundColor Cyan
+    
+    Write-Host "║   Last Test:  " -NoNewline -ForegroundColor White
+    Write-Host ("{0,-23}" -f $testStatus) -NoNewline -ForegroundColor $(if ($testStatus -match "Success") { "Green" } else { "Red" })
+    if ($lastTestTime) {
+        $timeOnly = ($lastTestTime -split " ")[1]
+        Write-Host (" ({0})" -f $timeOnly) -NoNewline -ForegroundColor Gray
+        Write-Host ("{0,22}" -f " ") -NoNewline
+    }
+    else {
+        Write-Host ("{0,32}" -f " ") -NoNewline
+    }
+    Write-Host "      ║" -ForegroundColor Cyan
+    
+    Write-Host "║                                                                              ║" -ForegroundColor Cyan
+    
+    # Quick Actions Section
+    Write-Host "║ ⚡ Quick Actions                                                             ║" -ForegroundColor Yellow
+    Write-Host "║   [B]uild    [T]est     [R]un      [P]R Prep   [A]uth     [S]etup            ║" -ForegroundColor White
+    Write-Host "║   [I]nfo     [L]ogs     [M]odules  [G]it       [H]elp     [Q]uit             ║" -ForegroundColor White
+    Write-Host "║                                                                              ║" -ForegroundColor Cyan
+    
+    # Recent Activity Section
+    Write-Host "║ 📝 Recent Activity                                                           ║" -ForegroundColor Yellow
+    try {
+        $logPath = Join-Path $PSScriptRoot "CobraActivity.log"
+        if (Test-Path $logPath) {
+            $recentLogs = Get-Content $logPath -Tail 5
+            foreach ($log in $recentLogs) {
+                $logParts = $log -split " - ", 2
+                if ($logParts.Count -eq 2) {
+                    $time = $logParts[0]
+                    $message = $logParts[1]
+                    if ($message.Length -gt 62) { $message = $message.Substring(0, 60) + "..." }
+                    
+                    Write-Host "║   " -NoNewline -ForegroundColor Cyan
+                    $timeOnly = ($time -split " ")[1]
+                    Write-Host $timeOnly -NoNewline -ForegroundColor Gray
+                    Write-Host " - " -NoNewline -ForegroundColor DarkGray
+                    Write-Host ("{0,-62}" -f $message) -NoNewline -ForegroundColor White
+                    Write-Host "  ║" -ForegroundColor Cyan
+                }
+            }
+        }
+        else {
+            Write-Host "║   No recent activity                                                     ║" -ForegroundColor Gray
+        }
+    }
+    catch {
+        Write-Host "║   Unable to read activity log                                            ║" -ForegroundColor Red
+    }
+    
+    Write-Host "╚══════════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    
+    if ($Interactive) {
+        Write-Host ""
+        Write-Host "Press any key for quick action, 'Enter' for command input, or 'Q' to quit: " -NoNewline -ForegroundColor Yellow
+        
+        while ($true) {
+            $key = [System.Console]::ReadKey($true)
+            
+            switch ($key.Key) {
+                'B' { 
+                    Write-Host "B" -ForegroundColor Green
+                    Write-Host "Building application..." -ForegroundColor Yellow
+                    BuildApp
+                    break
+                }
+                'T' { 
+                    Write-Host "T" -ForegroundColor Green
+                    Write-Host "Testing application..." -ForegroundColor Yellow
+                    TestApp
+                    break
+                }
+                'R' { 
+                    Write-Host "R" -ForegroundColor Green
+                    Write-Host "Running application..." -ForegroundColor Yellow
+                    RunApp
+                    break
+                }
+                'P' { 
+                    Write-Host "P" -ForegroundColor Green
+                    Write-Host "Preparing for PR..." -ForegroundColor Yellow
+                    try { RunPullRequestPrep } catch { Write-Host "PR prep function not available" -ForegroundColor Red }
+                    break
+                }
+                'A' { 
+                    Write-Host "A" -ForegroundColor Green
+                    Write-Host "Authenticating..." -ForegroundColor Yellow
+                    AuthApp
+                    break
+                }
+                'S' { 
+                    Write-Host "S" -ForegroundColor Green
+                    Write-Host "Setting up..." -ForegroundColor Yellow
+                    SetupApp
+                    break
+                }
+                'I' { 
+                    Write-Host "I" -ForegroundColor Green
+                    try { AppInfo } catch { Write-Host "App info not available" -ForegroundColor Red }
+                    break
+                }
+                'L' { 
+                    Write-Host "L" -ForegroundColor Green
+                    Show-CobraLogs -Action view -Lines 10
+                    break
+                }
+                'M' { 
+                    Write-Host "M" -ForegroundColor Green
+                    cobra modules
+                    break
+                }
+                'G' { 
+                    Write-Host "G" -ForegroundColor Green
+                    Write-Host "Git status:" -ForegroundColor Yellow
+                    if (Get-Command git -ErrorAction SilentlyContinue) {
+                        git status
+                    }
+                    else {
+                        Write-Host "Git not available" -ForegroundColor Red
+                    }
+                    break
+                }
+                'H' { 
+                    Write-Host "H" -ForegroundColor Green
+                    CobraHelp
+                    break
+                }
+                'Q' { 
+                    Write-Host "Q" -ForegroundColor Green
+                    Write-Host "Exiting dashboard..." -ForegroundColor Yellow
+                    return
+                }
+                'Enter' { 
+                    Write-Host ""
+                    Write-Host "Enter command: " -NoNewline -ForegroundColor Yellow
+                    $command = Read-Host
+                    if ($command) {
+                        try {
+                            Invoke-Expression $command
+                        }
+                        catch {
+                            Write-Host "Error executing command: $($_.Exception.Message)" -ForegroundColor Red
+                        }
+                    }
+                    Write-Host ""
+                    Write-Host "Press any key for quick action or 'Q' to quit: " -NoNewline -ForegroundColor Yellow
+                }
+                default { 
+                    Write-Host ""
+                    Write-Host "Unknown key. Use [B]uild, [T]est, [R]un, [P]R, [A]uth, [S]etup, [I]nfo, [L]ogs, [M]odules, [G]it, [H]elp, [Q]uit" -ForegroundColor Red
+                    Write-Host "Press any key for quick action or 'Q' to quit: " -NoNewline -ForegroundColor Yellow
+                }
+            }
+        }
+    }
+}
+
+function Show-CobraDashboardInteractive {
+    Show-CobraDashboard -Interactive
+}
+
+# ================== Log Management Functions ==================
+
+function Show-CobraLogs {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("view", "search", "clear")]
+        [string]$Action,
+        
+        [string]$SearchTerm,
+        [string]$Lines = "20"
+    )
+    
+    $logPath = Join-Path $PSScriptRoot "CobraActivity.log"
+    
+    switch ($Action) {
+        "view" {
+            if (-not (Test-Path $logPath)) {
+                Write-Host "No activity log found." -ForegroundColor Yellow
+                return
+            }
+            
+            Write-Host "COBRA ACTIVITY LOG" -ForegroundColor Cyan
+            Write-Host "Location: $logPath" -ForegroundColor DarkGray
+            Write-Host ("=" * 80) -ForegroundColor DarkGray
+            
+            if ($Lines -eq "all") {
+                Get-Content $logPath | ForEach-Object {
+                    $parts = $_ -split " - ", 2
+                    if ($parts.Count -eq 2) {
+                        Write-Host $parts[0] -NoNewline -ForegroundColor Green
+                        Write-Host " - " -NoNewline -ForegroundColor DarkGray
+                        Write-Host $parts[1] -ForegroundColor White
+                    }
+                }
+            }
+            else {
+                $tailCount = [int]$Lines
+                Get-Content $logPath -Tail $tailCount | ForEach-Object {
+                    $parts = $_ -split " - ", 2
+                    if ($parts.Count -eq 2) {
+                        Write-Host $parts[0] -NoNewline -ForegroundColor Green
+                        Write-Host " - " -NoNewline -ForegroundColor DarkGray
+                        Write-Host $parts[1] -ForegroundColor White
+                    }
+                }
+            }
+            Write-Host ("=" * 80) -ForegroundColor DarkGray
+        }
+        
+        "search" {
+            if (-not (Test-Path $logPath)) {
+                Write-Host "No activity log found." -ForegroundColor Yellow
+                return
+            }
+            
+            if (-not $SearchTerm) {
+                Write-Host "Please provide a search term." -ForegroundColor Red
+                return
+            }
+            
+            Write-Host "SEARCHING COBRA ACTIVITY LOG" -ForegroundColor Cyan
+            Write-Host "Search term: '$SearchTerm'" -ForegroundColor DarkGray
+            Write-Host ("=" * 80) -ForegroundColor DarkGray
+            
+            $logMatches = Get-Content $logPath | Where-Object { $_ -like "*$SearchTerm*" }
+            
+            if ($logMatches) {
+                foreach ($match in $logMatches) {
+                    $parts = $match -split " - ", 2
+                    if ($parts.Count -eq 2) {
+                        Write-Host $parts[0] -NoNewline -ForegroundColor Green
+                        Write-Host " - " -NoNewline -ForegroundColor DarkGray
+                        
+                        # Highlight search term
+                        $highlightedText = $parts[1] -replace [regex]::Escape($SearchTerm), "[$SearchTerm]"
+                        Write-Host $highlightedText -ForegroundColor White
+                    }
+                }
+                Write-Host ""
+                Write-Host "Found $($logMatches.Count) matching entries." -ForegroundColor Green
+            }
+            else {
+                Write-Host "No matches found for '$SearchTerm'" -ForegroundColor Yellow
+            }
+            Write-Host ("=" * 80) -ForegroundColor DarkGray
+        }
+        
+        "clear" {
+            if (Test-Path $logPath) {
+                $confirmation = Read-Host "Are you sure you want to clear the activity log? (y/N)"
+                if ($confirmation -eq 'y' -or $confirmation -eq 'Y') {
+                    Clear-Content $logPath
+                    Write-Host "Activity log cleared." -ForegroundColor Green
+                    Log-CobraActivity "Activity log cleared by user"
+                }
+                else {
+                    Write-Host "Operation cancelled." -ForegroundColor Yellow
+                }
+            }
+            else {
+                Write-Host "No activity log found to clear." -ForegroundColor Yellow
+            }
+        }
+    }
+}
+
+# ================== Hotkey and Alias Setup ==================
+
+function Enable-CobraDashboardHotkey {
+    try {
+        # Register Ctrl+D hotkey for dashboard
+        Set-PSReadLineKeyHandler -Key Ctrl+d -ScriptBlock {
+            [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
+            [Microsoft.PowerShell.PSConsoleReadLine]::Insert("Show-CobraDashboard -Interactive")
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
+        
+        Write-Host "Dashboard hotkey enabled! Press " -NoNewline -ForegroundColor Green
+        Write-Host "Ctrl+D" -NoNewline -ForegroundColor Yellow
+        Write-Host " to open the context dashboard." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Unable to register hotkey. PSReadLine may not be available. Use 'cobra dashboard -i' instead." -ForegroundColor Yellow
+    }
+}
+
+# Create aliases for dashboard
+Set-Alias -Name "dash" -Value "Show-CobraDashboard" -Scope Global -Description "Cobra Dashboard (non-interactive)"
+Set-Alias -Name "dashi" -Value "Show-CobraDashboardInteractive" -Scope Global -Description "Cobra Dashboard (interactive)"
 
 function CobraDriver([CobraCommand] $command, [string[]] $options) {
     switch ($command) {
@@ -369,6 +798,37 @@ function CobraDriver([CobraCommand] $command, [string[]] $options) {
         health {
             $target = if ($options.Count -gt 0) { $options[0] } else { "all" }
             CheckHealth -target $target
+        }
+        dashboard {
+            $interactive = $options -contains "-i" -or $options -contains "--interactive"
+            Show-CobraDashboard -Interactive:$interactive
+        }
+        logs {
+            # View the last N log entries
+            $searchTerm = ""
+            $option = if ($options.Count -gt 0) { 
+                $options[0]
+                if ($options.Count -gt 1) {
+                    $searchTerm = $options[1]
+                }
+            } 
+            else { "view" }
+
+            switch ($option) {
+                "view" {
+                    $count = if ($options.Count -gt 1) { [int]$options[1] } else { 20 }
+                    Show-CobraLogs -Action "view" -Lines $count
+                }
+                "clear" {
+                    Show-CobraLogs -Action "clear"
+                }
+                "search" {
+                    Show-CobraLogs -Action "search" -SearchTerm $searchTerm
+                }
+                default {
+                    Write-Host "Invalid log option: $option" -ForegroundColor Red
+                }
+            }
         }
         default {
             CobraHelp

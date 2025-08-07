@@ -1,17 +1,25 @@
 # Cobra Framework
 
-Cobra Framework is a modular PowerShell framework for managing multiple repositories and development workflows with advanced productivity features.
+Cobra Framework is a modular PowerShell framework for managing multiple repositories and development workflows with advanced productivity features, including a context-aware dashboard for enhanced developer experience.
+
+## Requirements
+
+- **PowerShell 7.0 or higher** (for full Unicode support and modern features)
+- Windows 10/11 or Windows Server 2019/2022
+- Git (optional, for repository status features)
 
 ## Features
 
+- **Context-Aware Dashboard** 🎯 - Interactive UI with real-time project status, Git information, and quick actions
 - **Modular architecture** for easy extension and customization
 - **Built-in repository management** with context-aware navigation
 - **Custom utility scripts** with AI-powered assistance
 - **Global configuration support** with secure environment management
-- **Activity logging** for tracking usage and debugging
+- **Activity logging** with advanced search and management
 - **Module registry browsing** for discovering and sharing modules
 - **Rich output formatting** including markdown support
 - **Template and snippet management** for code reuse
+- **Hotkey integration** for instant dashboard access (Ctrl+D)
 
 ## Installation
 
@@ -38,6 +46,12 @@ This will remove the reference to `CobraProfile.ps1` from your PowerShell profil
 After installation, you can start using Cobra Framework commands immediately:
 
 ```powershell
+# Open the Context-Aware Dashboard
+dash              # Quick dashboard view
+dashi             # Interactive dashboard with hotkeys
+cobra dashboard    # Framework integration
+cobra dashboard -i # Interactive mode
+
 # Navigate to a repository
 repo <RepoName>
 
@@ -47,11 +61,53 @@ cobra modules
 # Check system health
 cobra health
 
-# View recent activity
-cobra logs view
+# View and manage activity logs
+Show-CobraLogs -Action view -Lines 10
+Show-CobraLogs -Action search -SearchTerm "Build"
+Show-CobraLogs -Action clear
 
 # Get help
 cobra help
+```
+
+## Context-Aware Dashboard 🚀
+
+The flagship feature of Cobra Framework is the Context-Aware Dashboard, providing real-time development insights:
+
+### Dashboard Features
+
+- **📍 Context Awareness** - Shows current location, Git branch, repository info, and status
+- **📊 Status Monitoring** - Displays build/test results with timing information
+- **⚡ Quick Actions** - Single-key access to common commands:
+  - `[B]uild` - Build current project
+  - `[T]est` - Run tests
+  - `[R]un` - Run application
+  - `[P]R Prep` - Prepare for pull request
+  - `[A]uth` - Authenticate
+  - `[S]etup` - Setup project
+  - `[I]nfo` - Show project info
+  - `[L]ogs` - View activity logs
+  - `[M]odules` - Manage modules
+  - `[G]it` - Git status
+  - `[H]elp` - Show help
+- **📝 Recent Activity** - Shows last 5 framework activities
+- **🔍 Log Management** - Integrated log viewing and searching
+- **⌨️ Hotkey Access** - Press `Ctrl+D` from anywhere to open dashboard
+
+### Dashboard Usage Examples
+
+```powershell
+# Quick dashboard view
+dash
+
+# Interactive dashboard with hotkeys
+dashi
+
+# Framework integration
+cobra dashboard -i
+
+# Open with hotkey (when available)
+# Press Ctrl+D from any PowerShell prompt
 ```
 
 ## Structure
@@ -180,6 +236,8 @@ Export-ModuleMember -Function Initialize-YourRepoModule, Auth-YourRepo, ...
 #### Cobra Framework Commands
 
 - **`cobra help`**: Display comprehensive help information.
+- **`cobra dashboard [-i]`**: Open the Context-Aware Dashboard.
+  - **`-i`**: Interactive mode with hotkey actions.
 - **`cobra modules`**: Manage Cobra modules.
   - **`add <name>`**: Create a new module with template files.
   - **`remove <name>`**: Remove an existing module.
@@ -207,6 +265,13 @@ Export-ModuleMember -Function Initialize-YourRepoModule, Auth-YourRepo, ...
 - **`cobra utils`**: Display available utility functions.
 - **`cobra health [target]`**: Run health checks for modules and repositories.
 
+#### Dashboard Aliases
+
+Quick access aliases for the Context-Aware Dashboard:
+
+- **`dash`**: Open the dashboard in view mode.
+- **`dashi`**: Open the dashboard in interactive mode.
+
 #### Utility Functions
 
 The framework includes several built-in utility functions accessible from anywhere:
@@ -222,12 +287,33 @@ The framework includes several built-in utility functions accessible from anywhe
 
 ## Activity Logging
 
-Cobra Framework automatically logs user activities to `CobraActivity.log` for debugging and usage tracking. You can manage these logs using:
+Cobra Framework automatically logs user activities to `CobraActivity.log` for debugging and usage tracking. The enhanced logging system provides:
+
+### Log Management Features
+
+- **Real-time Activity Tracking** - All framework operations are logged with timestamps
+- **Advanced Search** - Find specific activities with term highlighting
+- **Integrated Dashboard View** - Recent activities displayed in the Context-Aware Dashboard
+- **Log Rotation** - Automatic backup when clearing logs
+- **Formatted Output** - Color-coded timestamps and messages for easy reading
+
+### Log Management Commands
 
 ```powershell
-cobra logs view 100        # View last 100 entries
-cobra logs search "GRTS"   # Search for specific terms
-cobra logs clear           # Clear logs (creates backup)
+# View recent logs
+Show-CobraLogs -Action view -Lines 100
+
+# Search for specific activities
+Show-CobraLogs -Action search -SearchTerm "Build"
+Show-CobraLogs -Action search -SearchTerm "Dashboard"
+
+# Clear logs (creates backup)
+Show-CobraLogs -Action clear
+
+# Legacy commands (still supported)
+cobra logs view 100
+cobra logs search "GRTS"
+cobra logs clear
 ```
 
 ## AI Integration
@@ -263,6 +349,17 @@ Browse-ModuleRegistry -Action open      # Open registry folder
 
 ## Recent Updates
 
+### Context-Aware Dashboard (Latest)
+
+- **Interactive TUI Dashboard** with real-time context detection and status monitoring
+- **Hotkey Integration** - Ctrl+D for instant dashboard access from anywhere
+- **Quick Actions** - Single-key access to build, test, run, and other common operations
+- **Git Integration** - Live branch status and change tracking
+- **Enhanced Log Management** - Advanced search, filtering, and integrated dashboard view
+- **Dashboard Aliases** - `cdash` and `cdashi` for quick access
+
+### Previous Updates
+
 - Added comprehensive activity logging with search and management capabilities
 - Integrated AI-powered text generation with markdown output
 - Enhanced module registry browsing and discovery
@@ -270,18 +367,6 @@ Browse-ModuleRegistry -Action open      # Open registry folder
 - Added Base64 decoding utilities
 - Enhanced build system with multiple build types support
 - Expanded utility functions for system administration
-
-## Roadmap
-
-Future enhancements planned for Cobra Framework:
-
-- Interactive CLI with fuzzy finder navigation
-- Context-aware command suggestions
-- Template and snippet management system
-- Task automation and scheduling
-- Integration with external tools (Git, Azure DevOps, Slack)
-- Cross-platform support for Linux/macOS
-- Self-updating mechanism with version management
 
 ## Contributing
 

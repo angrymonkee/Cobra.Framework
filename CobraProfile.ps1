@@ -113,21 +113,21 @@ function repo ([string] $name) {
 function Load-CobraUtilityScripts {
     try {
         $utilsFolder = Join-Path $PSScriptRoot "Utils"
-        Write-Host "Loading utility scripts from: $utilsFolder"
+        Log-CobraActivity "Loading utility scripts from: $utilsFolder"
         if (-not (Test-Path $utilsFolder)) {
             New-Item -Path $utilsFolder -ItemType Directory | Out-Null
-            Write-Host "Created Utils folder at: $utilsFolder"
+            Log-CobraActivity "Created Utils folder at: $utilsFolder"
         }
 
         Get-ChildItem -Path $utilsFolder -Filter *.psm1 | ForEach-Object {
             # Write-Host "Loading utility script: $($_.FullName)"
             Import-Module $_.FullName -Force -DisableNameChecking
-
         }
     }
     catch {
         Write-Host "Failed to load script: $($_.FullName)" -ForegroundColor Red
         Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+        Log-CobraActivity "Error loading utility scripts: $($_.Exception.Message)"
     }
 }
 
@@ -155,6 +155,7 @@ Register-ArgumentCompleter -CommandName repo -ParameterName name -ScriptBlock {
 
 function Update-CobraSystemConfiguration {
     Write-Host "Updating system configuration..."
+    Log-CobraActivity "Updating system configuration..."
 
     # Path to the config.ps1 file
     $configFilePath = Join-Path $PSScriptRoot "sysconfig.ps1"
@@ -350,9 +351,9 @@ function CobraHelp {
     write-host "       - Interactive template creation wizard" -ForegroundColor DarkGray
     Write-Host "        registry" -NoNewline
     write-host "           - Browse team template registry" -ForegroundColor DarkGray
-    Write-Host "        publish <name>" -NoNewline
-    write-host "     - Share template with team" -ForegroundColor DarkGray
-    Write-Host "        import <name>" -NoNewline
+    Write-Host "        publish <name> [type]" -NoNewline
+    write-host " - Share template with team" -ForegroundColor DarkGray
+    Write-Host "        import <name> [type]" -NoNewline
     write-host "       - Import template from registry" -ForegroundColor DarkGray
     Write-Host "    utils" -NoNewline
     write-host "  - Displays the available utility functions" -ForegroundColor DarkGray
@@ -652,19 +653,23 @@ function CobraDriver([CobraCommand] $command, [string[]] $options) {
                 }
                 "publish" {
                     if ($remainingOptions.Count -eq 0) {
-                        Write-Host "Usage: cobra templates publish <template-name>" -ForegroundColor Red
+                        Write-Host "Usage: cobra templates publish <template-name> [type]" -ForegroundColor Red
+                        Write-Host "  Types: module (default), function, snippet" -ForegroundColor Yellow
                         return
                     }
                     $templateName = $remainingOptions[0]
-                    Publish-CobraTemplate -Name $templateName
+                    $templateType = if ($remainingOptions.Count -gt 1) { $remainingOptions[1] } else { "module" }
+                    Publish-CobraTemplate -Name $templateName -Type $templateType
                 }
                 "import" {
                     if ($remainingOptions.Count -eq 0) {
-                        Write-Host "Usage: cobra templates import <template-name>" -ForegroundColor Red
+                        Write-Host "Usage: cobra templates import <template-name> [type]" -ForegroundColor Red
+                        Write-Host "  Types: module (default), function, snippet" -ForegroundColor Yellow
                         return
                     }
                     $templateName = $remainingOptions[0]
-                    Import-CobraTemplate -Name $templateName
+                    $templateType = if ($remainingOptions.Count -gt 1) { $remainingOptions[1] } else { "module" }
+                    Import-CobraTemplate -Name $templateName -Type $templateType
                 }
                 default {
                     Write-Host "Invalid templates subcommand: $subCommand" -ForegroundColor Red

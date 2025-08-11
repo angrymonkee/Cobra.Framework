@@ -722,4 +722,4 @@ $content
 # Initialize template directories when this script is loaded
 Initialize-TemplateDirectories
 
-Write-Host "Templates Management loaded successfully." -ForegroundColor Green
+Log-CobraActivity "Templates Management loaded successfully."

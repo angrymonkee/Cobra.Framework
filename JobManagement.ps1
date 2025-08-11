@@ -15,10 +15,10 @@ $global:CobraJobs = @{
 function Load-CobraJobScripts {
     try {
         $jobsFolder = Join-Path $PSScriptRoot "Jobs"
-        Write-Host "Loading job scripts from: $jobsFolder"
+        Log-CobraActivity "Loading job scripts from: $jobsFolder"
         if (-not (Test-Path $jobsFolder)) {
             New-Item -Path $jobsFolder -ItemType Directory | Out-Null
-            Write-Host "Created Jobs folder at: $jobsFolder"
+            Log-CobraActivity "Created Jobs folder at: $jobsFolder"
         }
 
         Get-ChildItem -Path $jobsFolder -Filter *.psm1 | ForEach-Object {

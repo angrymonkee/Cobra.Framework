@@ -36,11 +36,6 @@ if (-not $global:templatesManagementScriptLoaded) {
     . "$($global:CobraConfig.CobraRoot)/TemplatesManagement.ps1"
 }
 
-# Load module marketplace
-if (-not $global:moduleMarketplaceScriptLoaded) {
-    . "$($global:CobraConfig.CobraRoot)/ModuleMarketplace.ps1"
-}
-
 Log-CobraActivity "Loaded COBRA driver."
 
 # Log profile load

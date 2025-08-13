@@ -153,6 +153,11 @@ The new system is designed to work alongside the old registry. Existing modules 
 - **Phase 2**: Web interface, remote registries, team collaboration
 - **Phase 3**: CI/CD integration, automated testing, quality gates
 
+**📋 For complete roadmap details and current status, see:**
+
+- [MARKETPLACE-ROADMAP.md](MARKETPLACE-ROADMAP.md) - Complete development roadmap with technical details
+- [MARKETPLACE-STATUS.md](MARKETPLACE-STATUS.md) - Current status and quick reference guide
+
 ## Troubleshooting
 
 ### Registry Not Found

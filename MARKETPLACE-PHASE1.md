@@ -56,7 +56,6 @@ cobra modules info GitUtils  # Shows average rating and recent reviews
 ```
 ModuleRegistry/
 ├── registry.json          # Central metadata database
-├── modules/               # Module source code
 ├── packages/              # Versioned module packages (*.zip)
 ├── metadata/              # Individual metadata files
 └── cache/                 # Installation cache

@@ -102,7 +102,7 @@ function Initialize-ModuleMarketplace {
     }
     
     # Create subdirectories
-    $subdirs = @("modules", "metadata", "packages", "cache")
+    $subdirs = @("metadata", "packages", "cache")
     foreach ($subdir in $subdirs) {
         $path = Join-Path $registryPath $subdir
         if (-not (Test-Path $path)) {
@@ -520,6 +520,27 @@ function Publish-CobraModule {
         
         # Create package
         Compress-Archive -Path $modulePath -DestinationPath $packagePath -Force
+        
+        # Copy extended metadata if it exists
+        $moduleMetadataSource = Join-Path $modulePath "metadata"
+        if (Test-Path $moduleMetadataSource) {
+            $metadataDir = Join-Path $registryPath "metadata"
+            $moduleMetadataTarget = Join-Path $metadataDir "$ModuleName\$Version"
+            
+            # Remove existing metadata for this specific version
+            if (Test-Path $moduleMetadataTarget) {
+                Remove-Item -Path $moduleMetadataTarget -Recurse -Force
+            }
+            
+            # Ensure parent directory exists
+            $moduleDir = Split-Path $moduleMetadataTarget
+            if (-not (Test-Path $moduleDir)) {
+                New-Item -Path $moduleDir -ItemType Directory -Force | Out-Null
+            }
+            
+            Copy-Item -Path $moduleMetadataSource -Destination $moduleMetadataTarget -Recurse -Force
+            Write-Host "Extended metadata copied to registry (version $Version)" -ForegroundColor DarkGray
+        }
         
         # Update registry
         if (-not $registry.Modules.ContainsKey($ModuleName)) {

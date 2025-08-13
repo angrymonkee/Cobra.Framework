@@ -1076,18 +1076,26 @@ function Edit-CobraScriptModule {
             return
         }
         
-        # Look for the main module file
-        $moduleFile = Join-Path $modulePath "$name.psm1"
-        if (-not (Test-Path $moduleFile)) {
-            Write-Host "Module file not found: $moduleFile" -ForegroundColor Red
+        # Get all files in the module directory
+        $moduleFiles = Get-ChildItem -Path $modulePath -File -Recurse | Where-Object { 
+            $_.Extension -in @('.ps1', '.psm1', '.psd1', '.json', '.md', '.txt', '.config', '.xml', '.yaml', '.yml') 
+        }
+        
+        if ($moduleFiles.Count -eq 0) {
+            Write-Host "No editable files found in module directory: $modulePath" -ForegroundColor Yellow
             return
         }
         
-        # Open in default editor
-        Write-Host "Opening module '$name' for editing..." -ForegroundColor Cyan
-        Start-Process $moduleFile
+        # Open all module files in default editor
+        Write-Host "Opening module '$name' files for editing..." -ForegroundColor Cyan
+        Write-Host "Found $($moduleFiles.Count) files to open:" -ForegroundColor DarkGray
         
-        Log-CobraActivity "Opened module for editing: $name"
+        foreach ($file in $moduleFiles) {
+            Write-Host "  - $($file.Name)" -ForegroundColor DarkGray
+            Start-Process $file.FullName
+        }
+        
+        Log-CobraActivity "Opened module for editing: $name ($($moduleFiles.Count) files)"
     }
     catch {
         Write-Host "Error opening module '$name': $($_.Exception.Message)" -ForegroundColor Red

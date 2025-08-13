@@ -1,5 +1,6 @@
 @{
     Name               = "Code"
+    Description        = "General code development module"
     Repo               = ""
     AuthMethod         = "Authenticate-CodeRepo"
     SetupMethod        = "Configure-CodeRepo"

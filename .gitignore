@@ -1,12 +1,4 @@
 Archive/*
-Packages/*
-Modules/GRTS/*
-Modules/Garrison/*
-Modules/Greenbelt/*
-Modules/GreenbeltCli/*
-Modules/GreenbeltDevPortal/*
-Modules/GreenbeltSdk/*
-Modules/Anaconda/*
-Modules/OpenAI/*
+Modules/*
 CobraActivity.log
 sysconfig.ps1

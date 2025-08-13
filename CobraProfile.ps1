@@ -36,6 +36,11 @@ if (-not $global:templatesManagementScriptLoaded) {
     . "$($global:CobraConfig.CobraRoot)/TemplatesManagement.ps1"
 }
 
+# Load module marketplace
+if (-not $global:moduleMarketplaceScriptLoaded) {
+    . "$($global:CobraConfig.CobraRoot)/ModuleMarketplace.ps1"
+}
+
 Log-CobraActivity "Loaded COBRA driver."
 
 # Log profile load
@@ -223,7 +228,7 @@ function ShowUtilityFunctions {
     if (Test-Path $utilsFolder) {
         $childItems = Get-ChildItem -Path $utilsFolder -Filter *.psm1
         if ($childItems.Count -gt 0) {
-            Write-Host "USER DEFINED UTILITY FUNCTIONS:" -ForegroundColor DarkGray
+            Write-Host "USER DEFINED UTILITY FUNCTIONS:" -ForegroundColor Yellow
 
             $childItems | ForEach-Object {
                 $scriptContent = Get-Content $_.FullName
@@ -257,7 +262,7 @@ function CobraHelp {
     Write-Host -ForegroundColor Yellow "|_____/_______/_______/__/\__/___/   \___\"
     Write-Host -ForegroundColor Red "CENTRALIZED OPS for BUILDING RELIABLE AUTOMATION"
     Write-Host "------------------------------------------------" -ForegroundColor DarkGray
-    Write-Host -ForegroundColor DarkGray "DEV COMMANDS:"
+    Write-Host -ForegroundColor Yellow "DEV COMMANDS:"
     Write-Host " appInfo" -NoNewline
     write-host "   - Gets the app information for your current repo" -ForegroundColor DarkGray
     Write-Host " authApp" -NoNewline
@@ -277,14 +282,14 @@ function CobraHelp {
     write-host " viewPRs" -NoNewline
     write-host "   - Reads assigned pull requests for the current repo" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host -ForegroundColor DarkGray "NAV COMMANDS:"
+    Write-Host -ForegroundColor Yellow "NAV COMMANDS:"
     Write-Host " repo" -NoNewline
     write-host "      - Allows you to switch between various developer code repositories. Type 'repo' for specific help." -ForegroundColor DarkGray
     Write-Host " go" -NoNewline
     write-host "        - Allows you to navigate to various tasks. Type 'go' for specific help." -ForegroundColor DarkGray
     Write-Host ""
     ShowUtilityFunctions
-    Write-Host -ForegroundColor DarkGray "COBRA CONFIG & SETUP COMMANDS:"
+    Write-Host -ForegroundColor Yellow "COBRA CONFIG & SETUP COMMANDS:"
     Write-Host " cobra <option>" -NoNewline
     write-host "    - Displays this help information" -ForegroundColor DarkGray
     Write-Host "    env <option>" -NoNewline
@@ -311,56 +316,35 @@ function CobraHelp {
     write-host "               - Displays this help information" -ForegroundColor DarkGray
     Write-Host "    modules <option>" -NoNewline
     write-host "   - Displays the available cobra modules. Modules contain custom logic for various repositories." -ForegroundColor DarkGray
-    write-host "        add <name>" -NoNewline
-    write-host "     - Creates a new cobra module using templates" -ForegroundColor DarkGray
-    Write-Host "        remove <name>" -NoNewline
-    write-host "  - Removes a cobra module" -ForegroundColor DarkGray
-    Write-Host "        edit <name>" -NoNewline
-    write-host "    - Edits a cobra module" -ForegroundColor DarkGray
-    Write-Host "        import <name> <artifactPath>" -NoNewline
-    write-host "  - Imports a cobra module from an artifact" -ForegroundColor DarkGray
-    Write-Host "        export <name> <artifactPath>" -NoNewline
-    write-host "  - Exports a cobra module to an artifact" -ForegroundColor DarkGray
-    Write-Host "        registry <action>" -NoNewline
-    write-host "    - Browse and manage the module registry" -ForegroundColor DarkGray
-    write-host "            list" -NoNewline
-    write-host "             - List all modules in registry" -ForegroundColor DarkGray
-    Write-Host "            info <name>" -NoNewline
-    write-host "      - Get detailed info about a module" -ForegroundColor DarkGray
-    Write-Host "            search <term>" -NoNewline
-    write-host "    - Search for modules" -ForegroundColor DarkGray
-    Write-Host "            open" -NoNewline
-    write-host "             - Open registry folder in Explorer" -ForegroundColor DarkGray
-    Write-Host "            push <name>" -NoNewline
-    write-host "      - Push a module to the registry" -ForegroundColor DarkGray
-    Write-Host "            pull <name>" -NoNewline
-    write-host "      - Pull a module from the registry" -ForegroundColor DarkGray
+    Write-Host "      ** For detailed module commands, run: " -NoNewline -ForegroundColor DarkGray  
+    Write-Host "cobra modules" -ForegroundColor Cyan
+    Write-Host ""
     Write-Host "    templates <option>" -NoNewline
-    write-host "    - Template and snippet management for rapid code reuse (built-in)" -ForegroundColor DarkGray
+    write-host "        - Template and snippet management for rapid code reuse (built-in)" -ForegroundColor DarkGray
     Write-Host "        list [category]" -NoNewline
-    write-host "     - List available templates (module/function/snippet)" -ForegroundColor DarkGray
+    write-host "       - List available templates (module/function/snippet)" -ForegroundColor DarkGray
     Write-Host "        new <template> <name>" -NoNewline
     write-host " - Create new module from template" -ForegroundColor DarkGray
     Write-Host "        snippet <name>" -NoNewline
-    write-host "      - Copy snippet to clipboard" -ForegroundColor DarkGray
+    write-host "        - Copy snippet to clipboard" -ForegroundColor DarkGray
     Write-Host "        save <name> <type>" -NoNewline
-    write-host "   - Save current code as template" -ForegroundColor DarkGray
+    write-host "    - Save current code as template" -ForegroundColor DarkGray
     Write-Host "        search <term>" -NoNewline
-    write-host "      - Search for templates and snippets" -ForegroundColor DarkGray
+    write-host "         - Search for templates and snippets" -ForegroundColor DarkGray
     Write-Host "        wizard [type]" -NoNewline
-    write-host "       - Interactive template creation wizard" -ForegroundColor DarkGray
+    write-host "         - Interactive template creation wizard" -ForegroundColor DarkGray
     Write-Host "        registry" -NoNewline
-    write-host "           - Browse team template registry" -ForegroundColor DarkGray
+    write-host "              - Browse team template registry" -ForegroundColor DarkGray
     Write-Host "        publish <name> [type]" -NoNewline
     write-host " - Share template with team" -ForegroundColor DarkGray
     Write-Host "        import <name> [type]" -NoNewline
-    write-host "       - Import template from registry" -ForegroundColor DarkGray
+    write-host "  - Import template from registry" -ForegroundColor DarkGray
     Write-Host "    utils" -NoNewline
-    write-host "  - Displays the available utility functions" -ForegroundColor DarkGray
+    write-host "              - Displays the available utility functions" -ForegroundColor DarkGray
     Write-Host "    health <target>" -NoNewline
     write-host "    - Runs health checks for modules and repositories. Target can be 'all', 'modules', or 'repositories'." -ForegroundColor DarkGray
     Write-Host "    dashboard [-i]" -NoNewline
-    write-host "   - Show context-aware dashboard. Use -i for interactive mode with quick actions." -ForegroundColor DarkGray
+    write-host "     - Show context-aware dashboard. Use -i for interactive mode with quick actions." -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "📋 DASHBOARD FEATURES" -ForegroundColor Yellow
     Write-Host "  • Context awareness - shows current location, git status, repository info"
@@ -483,27 +467,51 @@ function Show-CobraLogs {
     }
 }
 
+function Show-CobraModuleHelp {
+    Write-Host "COBRA MODULE SYSTEM" -ForegroundColor Cyan
+    Write-Host "===================" -ForegroundColor Cyan
+    Write-Host "LOCAL MODULE MANAGEMENT:" -ForegroundColor Yellow
+    Write-Host "  cobra modules list                      - Lists locally installed modules" -ForegroundColor DarkGray
+    Write-Host "  cobra modules add <name>                - Creates a new cobra module using templates" -ForegroundColor DarkGray
+    Write-Host "  cobra modules uninstall <name>         - Uninstalls a cobra module" -ForegroundColor DarkGray
+    Write-Host "  cobra modules edit <name>              - Edits a cobra module" -ForegroundColor DarkGray
+    Write-Host "  cobra modules import <name> <path>     - Imports a cobra module from an artifact" -ForegroundColor DarkGray
+    Write-Host "  cobra modules export <name> <path>     - Exports a cobra module to an artifact" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "MARKETPLACE & REGISTRY:" -ForegroundColor Yellow
+    Write-Host "  cobra modules search <term>            - Search modules (searches both local and registry)" -ForegroundColor DarkGray
+    Write-Host "  cobra modules registry init            - Initialize the module marketplace" -ForegroundColor DarkGray
+    Write-Host "  cobra modules registry list            - List all available registry modules" -ForegroundColor DarkGray
+    Write-Host "  cobra modules registry info <name>     - Get detailed info about a module" -ForegroundColor DarkGray
+    Write-Host "  cobra modules registry open            - Open registry folder in Explorer" -ForegroundColor DarkGray
+    Write-Host "  cobra modules install <name> [version] - Install a module with dependency resolution" -ForegroundColor DarkGray
+    Write-Host "  cobra modules update <name>            - Update a module to the latest version" -ForegroundColor DarkGray
+    Write-Host "  cobra modules rate <name> <1-5>        - Rate and review a module" -ForegroundColor DarkGray
+    Write-Host "  cobra modules info <name>              - Get detailed module information" -ForegroundColor DarkGray
+    Write-Host "  cobra modules publish <name>           - Publish a module to the marketplace" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "For complete command list: " -NoNewline -ForegroundColor DarkGray
+    Write-Host "cobra help" -ForegroundColor Cyan
+}
+
 function CobraDriver([CobraCommand] $command, [string[]] $options) {
     switch ($command) {
         help {
             CobraHelp
         }
         modules {
-            if ($options.Count -le 1) {
-                ShowCobraScriptModules
+            if ($options.Count -eq 0) {
+                # Show module help instead of listing all modules
+                Show-CobraModuleHelp
                 return
             }
 
             # Parse the subcommand and remaining options
             $subCommand = $options[0]
-            $remainingOptions = $options[1..($options.Count - 1)]
+            $remainingOptions = if ($options.Count -gt 1) { $options[1..($options.Count - 1)] } else { @() }
             # Convert the subcommand to the CobraModulesCommands enum
-            if ([enum]::IsDefined([CobraModulesCommands], $subCommand)) {
-                CobraModulesDriver -command ([CobraModulesCommands]::Parse([CobraModulesCommands], $subCommand)) -options $remainingOptions
-            }
-            else {
-                ShowCobraScriptModules
-            }
+            # Call the modules driver directly
+            CobraModulesDriver -command $subCommand -options $remainingOptions
         }
         go {
             # Parse the subcommand and remaining options

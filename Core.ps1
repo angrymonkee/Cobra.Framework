@@ -9,6 +9,7 @@ if ($null -eq $global:CobraScriptModules) {
 $global:currentAppConfig = $null
 $global:goTaskStore = @{}
 $global:AppConfigs = @{}
+$global:CobraStandaloneModules = @{}  # Tracking for standalone modules
 $global:requiredKeys = @("Name", "Repo", "AuthMethod", "SetupMethod", "BuildMethod", "TestMethod", "RunMethod", "DevMethod", "ReviewPullRequests", "OpenPullRequest")
 
 # ================= Core Functions =================
@@ -32,6 +33,34 @@ function Register-CobraRepository {
     # Register the repository in CobraScriptModules
     $global:CobraScriptModules[$Name] = @($Name, $Description)
     Write-Verbose "Registered repository: $Name"
+}
+
+function Register-CobraStandaloneModule {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Description,
+        
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Config
+    )
+    
+    # Initialize standalone modules tracking if it doesn't exist
+    if ($null -eq $global:CobraStandaloneModules) {
+        $global:CobraStandaloneModules = @{}
+    }
+    
+    # Register the standalone module configuration (without repository dependency)
+    $global:CobraStandaloneModules[$Name] = $Config
+    
+    # Also register in CobraScriptModules for unified module tracking
+    $global:CobraScriptModules[$Name] = @($Name, "$Description (Standalone)")
+    
+    Write-Verbose "Registered standalone module: $Name"
+    Log-CobraActivity "Registered standalone module: $Name - $Description"
 }
 
 function Update-ModuleConfigFile {
@@ -90,8 +119,21 @@ function Import-CobraModules {
         $modulePath = Join-Path $module.FullName "$($module.Name).psm1"
         if (Test-Path $modulePath) {
             Import-Module $modulePath -Force -DisableNameChecking
+            
             # Initialize the module
-            & "Initialize-$($module.Name)Module"
+            $initFunction = "Initialize-$($module.Name)Module"
+            if (Get-Command $initFunction -ErrorAction SilentlyContinue) {
+                & $initFunction
+                
+                # Check if this is a standalone module and provide user feedback
+                $configPath = Join-Path $module.FullName "config.ps1"
+                if (Test-Path $configPath) {
+                    $config = & $configPath
+                    if ($config.ModuleType -eq "Standalone") {
+                        Write-Verbose "Loaded standalone module: $($module.Name) (type '$($module.Name.ToLower())' for help)"
+                    }
+                }
+            }
         }
     }
 }
@@ -115,6 +157,32 @@ function GetCurrentAppConfig() {
         return $null
     }
     return $global:currentAppConfig
+}
+
+function Get-CobraStandaloneModules {
+    [CmdletBinding()]
+    param()
+    
+    if ($null -eq $global:CobraStandaloneModules) {
+        return @()
+    }
+    
+    return $global:CobraStandaloneModules
+}
+
+function Get-CobraStandaloneModule {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+    
+    if ($null -eq $global:CobraStandaloneModules -or -not $global:CobraStandaloneModules.ContainsKey($Name)) {
+        Write-Error "Standalone module '$Name' not found"
+        return $null
+    }
+    
+    return $global:CobraStandaloneModules[$Name]
 }
 
 function VerifyInRepo([string]$repo) {
@@ -201,7 +269,7 @@ function Log-CobraActivity {
 
 function CheckHealth {
     param (
-        [string]$target = "all" # Options: "all", "modules", "repositories"
+        [string]$target = "all" # Options: "all", "modules", "repositories", "standalone"
     )
 
     Write-Host "Running health checks for: $target" -ForegroundColor Cyan
@@ -210,6 +278,7 @@ function CheckHealth {
         "all" {
             CheckModulesHealth
             CheckRepositoriesHealth
+            CheckStandaloneModulesHealth
         }
         "modules" {
             CheckModulesHealth
@@ -217,8 +286,11 @@ function CheckHealth {
         "repositories" {
             CheckRepositoriesHealth
         }
+        "standalone" {
+            CheckStandaloneModulesHealth
+        }
         default {
-            Write-Host "Invalid target specified. Use 'all', 'modules', or 'repositories'." -ForegroundColor Red
+            Write-Host "Invalid target specified. Use 'all', 'modules', 'repositories', or 'standalone'." -ForegroundColor Red
         }
     }
 }
@@ -265,6 +337,49 @@ function CheckRepositoriesHealth {
         }
         else {
             Write-Host "Repository '$($appConfig.Key)' is healthy." -ForegroundColor Green
+        }
+    }
+}
+
+function CheckStandaloneModulesHealth {
+    Write-Host "Checking standalone module health..." -ForegroundColor Yellow
+
+    if ($null -eq $global:CobraStandaloneModules -or $global:CobraStandaloneModules.Count -eq 0) {
+        Write-Host "No standalone modules registered." -ForegroundColor Gray
+        return
+    }
+
+    foreach ($module in $global:CobraStandaloneModules.GetEnumerator()) {
+        $moduleName = $module.Key
+        $moduleConfig = $module.Value
+        $modulePath = Join-Path $PSScriptRoot "Modules\$moduleName"
+        $configPath = Join-Path $modulePath "config.ps1"
+
+        if (-not (Test-Path $modulePath)) {
+            Write-Host "Standalone module '$moduleName' is missing at path: $modulePath" -ForegroundColor Red
+        }
+        elseif (-not (Test-Path $configPath)) {
+            Write-Host "Standalone module '$moduleName' is missing its config.ps1 file at path: $configPath" -ForegroundColor Red
+        }
+        else {
+            Write-Host "Standalone module '$moduleName' is healthy." -ForegroundColor Green
+            
+            # Validate standalone module specific configuration
+            $standaloneRequiredKeys = @("Name", "Description", "Version", "ModuleType")
+            
+            foreach ($key in $standaloneRequiredKeys) {
+                if (-not $moduleConfig.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($moduleConfig[$key])) {
+                    Write-Host "  Missing or empty value for key: $key" -ForegroundColor Red
+                }
+                else {
+                    Write-Host "  Key '$key' is set to: $($moduleConfig[$key])" -ForegroundColor Green
+                }
+            }
+            
+            # Check if module type is correctly set to "Standalone"
+            if ($moduleConfig.ModuleType -ne "Standalone") {
+                Write-Host "  Warning: ModuleType should be 'Standalone' but is '$($moduleConfig.ModuleType)'" -ForegroundColor Yellow
+            }
         }
     }
 }

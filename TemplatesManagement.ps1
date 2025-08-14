@@ -183,8 +183,17 @@ function New-CobraModuleFromTemplate {
         if (Test-Path $configPath) {
             try {
                 $config = . $configPath
-                Register-CobraRepository -Name $ModuleName -Description $config.Description -Config $config
-                Write-Host "✓ Module registered in Cobra Framework" -ForegroundColor Green
+                
+                # Check if this is a standalone module
+                if ($config.ContainsKey('ModuleType') -and $config.ModuleType -eq 'Standalone') {
+                    Register-CobraStandaloneModule -Name $ModuleName -Description $config.Description -Config $config
+                    Write-Host "✓ Standalone module registered in Cobra Framework" -ForegroundColor Green
+                }
+                else {
+                    # Traditional repository-based module
+                    Register-CobraRepository -Name $ModuleName -Description $config.Description -Config $config
+                    Write-Host "✓ Repository module registered in Cobra Framework" -ForegroundColor Green
+                }
             }
             catch {
                 Write-Host "⚠ Module created but registration failed: $($_.Exception.Message)" -ForegroundColor Yellow

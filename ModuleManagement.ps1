@@ -387,6 +387,16 @@ function Install-SingleModule {
             $initFunction = "Initialize-$($ModuleName)Module"
             if (Get-Command $initFunction -ErrorAction SilentlyContinue) {
                 & $initFunction
+                
+                # Additional setup for standalone modules
+                $configPath = Join-Path $modulePath "config.ps1"
+                if (Test-Path $configPath) {
+                    $config = & $configPath
+                    if ($config.ModuleType -eq "Standalone") {
+                        Write-Host "  ✓ Standalone module '$ModuleName' aliases registered" -ForegroundColor DarkGray
+                        Write-Host "  → Type '$ModuleName' or '$($ModuleName.ToLower())' for help" -ForegroundColor DarkGray
+                    }
+                }
             }
         }
         
@@ -882,11 +892,13 @@ function CobraModulesDriver([string] $command, [string[]] $options) {
         "add" {
             if ($options.Count -gt 0) {
                 $moduleName = $options[0]
-                Add-CobraScriptModule -name $moduleName
+                $template = if ($options.Count -gt 1) { $options[1] } else { "basic-module" }
+                Add-CobraScriptModule -name $moduleName -template $template
             }
             else {
-                Write-Host "Usage: cobra modules add <module-name>" -ForegroundColor Red
+                Write-Host "Usage: cobra modules add <module-name> [template]" -ForegroundColor Red
                 Write-Host "Creates a new local module using templates" -ForegroundColor DarkGray
+                Write-Host "Available templates: basic-module, standalone-module" -ForegroundColor DarkGray
             }
         }
         "uninstall" {
@@ -1011,7 +1023,10 @@ function ShowCobraScriptModules() {
 function Add-CobraScriptModule {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$name
+        [string]$name,
+        
+        [ValidateSet("basic-module", "standalone-module")]
+        [string]$template = "basic-module"
     )
     
     try {
@@ -1023,13 +1038,19 @@ function Add-CobraScriptModule {
         }
         
         # Create the module from template
-        New-CobraModuleFromTemplate -TemplateName "basic-module" -ModuleName $name
+        New-CobraModuleFromTemplate -TemplateName $template -ModuleName $name
         
         Write-Host "Module '$name' created successfully!" -ForegroundColor Green
         Write-Host "Location: $modulePath" -ForegroundColor DarkGray
-        Write-Host "Use 'cobra modules edit $name' to start editing" -ForegroundColor Cyan
         
-        Log-CobraActivity "Created new module: $name"
+        if ($template -eq "standalone-module") {
+            Write-Host "✓ Standalone module created - type '$name' or '$($name.ToLower())' for help" -ForegroundColor Cyan
+        }
+        else {
+            Write-Host "Use 'cobra modules edit $name' to start editing" -ForegroundColor Cyan
+        }
+        
+        Log-CobraActivity "Created new module: $name (template: $template)"
     }
     catch {
         Write-Host "Error creating module '$name': $($_.Exception.Message)" -ForegroundColor Red

@@ -1,0 +1,12 @@
+Hi {name},
+
+I wanted to follow up on our meeting regarding {topic}. Here are the key action items we discussed:
+
+- {action1}
+- {action2}
+- {action3}
+
+Please let me know if you have any questions or if there's anything else I can help with.
+
+Best regards,
+{sender}

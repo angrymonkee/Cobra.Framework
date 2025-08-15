@@ -3,5 +3,5 @@ Modules/*
 CobraActivity.log
 sysconfig.ps1
 # Add specific sub folder back
-!Modules/Code/*
-!Modules/Email/*
+!Modules/Code/
+!Modules/Email/

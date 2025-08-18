@@ -1971,6 +1971,9 @@ $config = . "$PSScriptRoot/config.ps1"
 Write-Host "📧 Email module loaded (Provider: $($config.Settings.Provider))" -ForegroundColor Cyan
 Log-CobraActivity "Email module loaded with provider: $($config.Settings.Provider)"
 
+# Register the module with Cobra Framework
+Initialize-EmailModule
+
 # Auto-test configuration if enabled
 if ($config.Settings.AutoValidateOnLoad -and -not (Test-EmailConfiguration)) {
     Write-Host "⚠️  Email module loaded with configuration warnings" -ForegroundColor Yellow

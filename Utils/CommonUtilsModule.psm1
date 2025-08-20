@@ -143,6 +143,8 @@ function AiExpander {
             write-host "Prompt: Based on my goal: $goal, my skills: $skills, and time: $time, build a step-by-step plan I can follow to achieve it."
             gemini -p "Based on my goal: $goal, my skills: $skills, and time: $time, build a step-by-step plan I can follow to achieve it. Format the response in markdown with numbered steps, headers for phases, and checkboxes for tasks."
         }
+        # Need to add a prompt for generating mermaid diagrams
+        # In the docs folder create the optimal type of mermaid diagram that represents the structure of all of the things going on in the ContosoAds Support API
         default {
             Write-Host "Invalid type: $Type. Options are: email, prompt, summarizetext, summarizetopic, brainstorm, expert, askme, faketool, extract, plan" -ForegroundColor Red
             return

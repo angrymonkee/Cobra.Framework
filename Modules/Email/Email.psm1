@@ -6,14 +6,20 @@
 function Initialize-EmailModule {
     [CmdletBinding()]
     param()
+
+    # Validate configuration
+    $config = . "$PSScriptRoot/config.ps1"
+    if (-not $config) {
+        throw "Failed to load module configuration"
+    }
     
     # Load module configuration
     $config = . "$PSScriptRoot/config.ps1"
     
     # Register as standalone module (no repository dependency)
     Register-CobraStandaloneModule -Name "Email" -Description "$($config.Description)" -Config $config
-    
-    Write-Host "✓ Email standalone module initialized" -ForegroundColor Green
+
+    Log-CobraActivity "Email standalone module initialized"
 }
 
 # Email Formatting Helper Functions

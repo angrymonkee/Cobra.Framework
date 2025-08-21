@@ -5,3 +5,4 @@ sysconfig.ps1
 # Add specific sub folder back
 !Modules/Code/
 !Modules/Email/
+!Modules/AzureDevOps/

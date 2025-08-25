@@ -14,6 +14,12 @@ if (Test-Path $userProfilePath) {
     }
 }
 
+# Create the profile file if it doesn't exist
+if (-not (Test-Path $userProfilePath)) {
+    New-Item -ItemType File -Path $userProfilePath -Force | Out-Null
+    Write-Host "Created new PowerShell profile at $userProfilePath" -ForegroundColor Green
+}
+
 # Append the dot reference to the user's PowerShell profile
 Add-Content -Path $userProfilePath -Value ". `"$cobraProfilePath`""
 Write-Host "CobraProfile.ps1 has been added to your PowerShell profile." -ForegroundColor Green

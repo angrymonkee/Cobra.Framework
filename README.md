@@ -161,13 +161,12 @@ Cobra.Framework/
 ├── Utils/                      # Custom utility scripts
 │   ├── CommonUtilsModule.psm1  # Common utilities and helpers
 │   └── ExperimentalUtils.psm1  # Experimental features and tools
-├── Modules/                    # Repository-specific modules
+├── Modules/                    # Repository-specific modules with optional templates
 │   ├── Code/                   # Example module for Code repository
-│   ├── Anaconda/               # Data science and Python tools
-│   ├── GRTS/                   # Gaming runtime testing system
-│   ├── Garrison/               # Security and compliance tools
-│   └── OpenAI/                 # AI integration and automation
-├── Templates/                  # Code templates and snippets
+│   ├── Email/                  # Email module with templates/ subdirectory
+│   │   └── templates/          # Module-specific templates (e.g., meeting-followup.txt)
+
+├── Templates/                  # Framework-wide code templates and snippets
 │   ├── code-snippets/          # Reusable code snippets
 │   ├── function-snippets/      # Function templates
 │   ├── module-templates/       # Module creation templates
@@ -353,21 +352,27 @@ The marketplace uses a central `registry.json` database containing:
 
 ## Template & Snippet System 📝
 
-Create, manage, and share code templates and snippets:
+Create, manage, and share code templates and snippets with enhanced module-specific template support:
 
 ### Using Templates
 
 ```powershell
-# View available templates
+# View available templates (includes module templates)
 cobra templates
+
+# View all templates including module-specific ones
+cobra templates -IncludeModuleTemplates
 
 # Create new module from template
 cobra templates new basic-module MyNewModule
 
+# Use module-specific templates with dot notation
+cobra templates new Email.meeting-followup MyMeetingNotes
+
 # Use interactive template wizard
 cobra templates wizard
 
-# Search templates
+# Search templates (searches both framework and module templates)
 cobra templates search "azure"
 ```
 
@@ -386,10 +391,39 @@ cobra templates search "logging"
 
 ### Template Types
 
-- **Module Templates**: Complete module structures with configuration files
-- **Function Snippets**: Reusable PowerShell functions
-- **Code Snippets**: Common code patterns and utilities
-- **Personal Templates**: Custom templates for individual workflows
+- **Framework Templates**: Global templates available across all modules
+  - **Module Templates**: Complete module structures with configuration files
+  - **Function Snippets**: Reusable PowerShell functions
+  - **Code Snippets**: Common code patterns and utilities
+  - **Personal Templates**: Custom templates for individual workflows
+- **Module-Specific Templates**: Templates provided by individual modules
+  - Located in `Modules/{ModuleName}/templates/` directories
+  - Accessible using `ModuleName.templatename` syntax
+  - Support parameter substitution and module-specific content
+  - Automatically discovered and integrated into template system
+
+### Module Template Integration
+
+Modules can now provide their own templates that integrate seamlessly with the framework template system:
+
+```powershell
+# Module templates are stored in Modules/{ModuleName}/templates/
+# Example: Modules/Email/templates/meeting-followup.txt
+
+# Use module templates with dot notation
+Copy-CobraTemplate "Email.meeting-followup" "my-notes.txt"
+
+# List templates from specific modules
+Get-ModuleTemplates "Email"
+
+# Get templates categorized by module
+Get-ModuleTemplatesByType
+
+# Module templates support all standard template features:
+# - Parameter substitution ({ModuleName}, {Date}, {Author})
+# - Custom placeholders specific to the module
+# - Integration with existing template commands
+```
 
 ## Job Management ⚡
 
@@ -457,6 +491,46 @@ function Auth-YourRepo {
 Export-ModuleMember -Function Initialize-YourRepoModule, Auth-YourRepo, ...
 ```
 
+### Adding Module Templates
+
+Modules can provide their own templates that integrate with the framework template system:
+
+1. Create a `templates/` directory in your module: `Modules/YourRepo/templates/`
+2. Add template files (any extension: `.ps1`, `.txt`, `.md`, `.json`, etc.)
+3. Use parameter substitution with standard placeholders: `{ModuleName}`, `{Date}`, `{Author}`
+4. Templates become available using dot notation: `YourRepo.templatename`
+
+**Example Module Template:**
+
+```text
+# Modules/YourRepo/templates/project-setup.md
+# {ModuleName} Project Setup
+
+Created by: {Author}
+Date: {Date}
+
+## Project Overview
+This template provides setup instructions for {ModuleName}.
+
+## Quick Start
+1. Clone the repository
+2. Run setup commands
+3. Begin development
+```
+
+**Using Module Templates:**
+
+```powershell
+# List module templates
+Get-ModuleTemplates "YourRepo"
+
+# Copy module template
+Copy-CobraTemplate "YourRepo.project-setup" "setup-guide.md"
+
+# Use in template commands
+cobra templates new YourRepo.project-setup MyProjectSetup
+```
+
 ### Available Commands
 
 #### Navigation Commands
@@ -502,10 +576,12 @@ Export-ModuleMember -Function Initialize-YourRepoModule, Auth-YourRepo, ...
 
 **Template & Snippet Management:**
 
-- **`cobra templates`**: List available templates and snippets.
+- **`cobra templates`**: List available templates and snippets (framework templates only).
+- **`cobra templates -IncludeModuleTemplates`**: List all templates including module-specific templates.
 - **`cobra templates new <template> <name>`**: Create new module from template.
+  - Supports module templates: `cobra templates new Email.meeting-followup MyNotes`
 - **`cobra templates snippet <name>`**: Insert a code snippet.
-- **`cobra templates search <term>`**: Search templates and snippets.
+- **`cobra templates search <term>`**: Search templates and snippets (searches both framework and module templates).
 - **`cobra templates save <name> <type>`**: Save current code as template.
 - **`cobra templates wizard`**: Interactive template creation wizard.
 - **`cobra templates publish <name>`**: Publish template to shared collection.
@@ -678,11 +754,17 @@ cobra modules registry restore <backup-file>  # Restore from backup
 ### Using Code Templates
 
 ```powershell
-# View available templates
+# View available framework templates
 cobra templates
 
-# Create new module from template
+# View all templates including module-specific ones
+cobra templates -IncludeModuleTemplates
+
+# Create new module from framework template
 cobra templates new basic-module MyNewProject
+
+# Use module-specific templates with dot notation
+cobra templates new Email.meeting-followup MyMeetingFollowup
 
 # Use interactive wizard
 cobra templates wizard
@@ -692,18 +774,41 @@ cobra templates snippet error-handling
 cobra templates snippet logging
 ```
 
+### Using Module Templates
+
+```powershell
+# List templates from specific modules
+Get-ModuleTemplates "Email"
+
+# Get all module templates categorized by module
+Get-ModuleTemplatesByType
+
+# Copy module template directly
+Copy-CobraTemplate "Email.meeting-followup" "my-notes.txt"
+
+# Copy with custom parameter values
+Copy-ModuleTemplate -ModuleName "Email" -TemplateName "meeting-followup" -DestinationPath "project-notes.txt"
+
+# Search across all templates (framework + module)
+cobra templates search "meeting"
+cobra templates search "azure"
+```
+
 ### Managing Templates
 
 ```powershell
-# Save current project as template
+# Save current project as framework template
 cobra templates save MyProjectTemplate module -SourcePath "C:\MyProject"
 
-# Search for specific templates
+# Search for specific templates (searches both framework and module templates)
 cobra templates search "azure"
 cobra templates search "function"
 
 # Publish template for team sharing
 cobra templates publish MyProjectTemplate
+
+# Module templates are automatically discovered when modules are loaded
+# No additional registration required - just place files in Modules/{ModuleName}/templates/
 ```
 
 ## System Monitoring Examples 📊
@@ -791,7 +896,21 @@ cobra modules rate "MyModule" 5 "Great tool!"   # Rate and review modules
 
 ## Recent Updates
 
-### Module Marketplace Phase 1 (Latest)
+### Module Template Integration (Latest)
+
+- **Module-Specific Templates** - Modules can now provide their own templates in `Modules/{ModuleName}/templates/` directories
+- **Seamless Integration** - Module templates automatically discovered and integrated into the framework template system
+- **Dot Notation Access** - Use module templates with `ModuleName.templatename` syntax (e.g., `Email.meeting-followup`)
+- **Enhanced Template Discovery** - `Get-CobraTemplates` now supports `-IncludeModuleTemplates` parameter for comprehensive template listing
+- **Module Template Functions** - New functions for module template management:
+  - `Get-ModuleTemplates` - List templates from specific modules
+  - `Get-ModuleTemplatesByType` - Categorize templates by module
+  - `Copy-ModuleTemplate` - Copy module-specific templates with parameter substitution
+  - `Copy-CobraTemplate` - Enhanced to support module.template syntax
+- **Parameter Substitution** - Full support for standard placeholders ({ModuleName}, {Date}, {Author}) in module templates
+- **PowerShell 5.1 Compatibility** - Fixed syntax issues for enterprise environments
+
+### Module Marketplace Phase 1
 
 - **Enhanced Registry Structure** - Streamlined 3-directory architecture (packages/, metadata/, cache/)
 - **Version-Specific Metadata** - Support for multiple module versions with dedicated metadata storage

@@ -1,4 +1,4 @@
-$global:templatesManagementScriptLoaded = $true
+﻿$global:templatesManagementScriptLoaded = $true
 
 # Dependencies:
 # Load the core script if it hasn't been loaded yet
@@ -125,7 +125,7 @@ function Get-CobraTemplates {
     return $templates | Sort-Object Type, Name
 }
 
-# Step 1 & 2: Module Template Discovery Functions
+# Step 1: Add Get-ModuleTemplates Function
 function Get-ModuleTemplates {
     [CmdletBinding()]
     param()
@@ -154,6 +154,7 @@ function Get-ModuleTemplates {
     return $moduleTemplates
 }
 
+# Step 2: Add Get-ModuleTemplatesByType Function  
 function Get-ModuleTemplatesByType {
     [CmdletBinding()]
     param(
@@ -304,8 +305,8 @@ function New-CobraModuleFromTemplate {
             $content | Out-File -FilePath $filePath -Encoding UTF8
         }
         
-        Write-Host "✓ Created module '$ModuleName' from template '$TemplateName'" -ForegroundColor Green
-        Write-Host "✓ Module location: $targetPath" -ForegroundColor Green
+        Write-Host "[OK] Created module '$ModuleName' from template '$TemplateName'" -ForegroundColor Green
+        Write-Host "[OK] Module location: $targetPath" -ForegroundColor Green
         
         # Register the new module if it has a config
         $configPath = "$targetPath\config.ps1"
@@ -316,12 +317,12 @@ function New-CobraModuleFromTemplate {
                 # Check if this is a standalone module
                 if ($config.ContainsKey('ModuleType') -and $config.ModuleType -eq 'Standalone') {
                     Register-CobraStandaloneModule -Name $ModuleName -Description $config.Description -Config $config
-                    Write-Host "✓ Standalone module registered in Cobra Framework" -ForegroundColor Green
+                    Write-Host "[OK] Standalone module registered in Cobra Framework" -ForegroundColor Green
                 }
                 else {
                     # Traditional repository-based module
                     Register-CobraRepository -Name $ModuleName -Description $config.Description -Config $config
-                    Write-Host "✓ Repository module registered in Cobra Framework" -ForegroundColor Green
+                    Write-Host "[OK] Repository module registered in Cobra Framework" -ForegroundColor Green
                 }
             }
             catch {
@@ -338,66 +339,7 @@ function New-CobraModuleFromTemplate {
     }
 }
 
-function Copy-CobraSnippet {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [string]$SnippetName,
-        
-        [hashtable]$Parameters = @{}
-    )
-    
-    $templatePath = Join-Path $PSScriptRoot "Templates"
-
-    $snippetPath = "$($templatePath)\code-snippets\$SnippetName.ps1"
-
-    if (-not (Test-Path $snippetPath)) {
-        # Try function snippets
-        $snippetPath = "$($templatePath)\function-snippets\$SnippetName.ps1"
-    }
-    
-    if (-not (Test-Path $snippetPath)) {
-        Write-Host "Snippet '$SnippetName' not found!" -ForegroundColor Red
-        Write-Host "Available snippets:" -ForegroundColor Yellow
-        $availableSnippets = Get-CobraTemplates -Category "snippet"
-        if ($availableSnippets) {
-            $availableSnippets | Format-Table Name, Description -AutoSize
-        }
-        return
-    }
-    
-    try {
-        $content = Get-Content $snippetPath -Raw
-        
-        # Replace common placeholders
-        $functionName = if ($Parameters['FunctionName']) { $Parameters['FunctionName'] } else { 'YourFunction' }
-        $moduleName = if ($Parameters['ModuleName']) { $Parameters['ModuleName'] } else { 'YourModule' }
-        
-        $content = $content -replace '\{FunctionName\}', $functionName
-        $content = $content -replace '\{ModuleName\}', $moduleName
-        $content = $content -replace '\{Date\}', (Get-Date).ToString('yyyy-MM-dd')
-        $content = $content -replace '\{Author\}', $env:USERNAME
-        
-        # Replace custom parameters
-        foreach ($param in $Parameters.GetEnumerator()) {
-            $placeholder = "{$($param.Key)}"
-            $content = $content -replace [regex]::Escape($placeholder), $param.Value
-        }
-        
-        # Copy to clipboard
-        $content | Set-Clipboard
-        Write-Host "✓ Snippet '$SnippetName' copied to clipboard" -ForegroundColor Green
-        
-        Log-CobraActivity "Used snippet '$SnippetName'"
-        
-    }
-    catch {
-        Write-Host "Error copying snippet: $($_.Exception.Message)" -ForegroundColor Red
-        Log-CobraActivity "Error copying snippet '$SnippetName': $($_.Exception.Message)"
-    }
-}
-
-# Step 4 & 5: Module Template Copying Functions
+# Step 4: Add Copy-ModuleTemplate Function
 function Copy-ModuleTemplate {
     [CmdletBinding()]
     param(
@@ -491,6 +433,7 @@ function Copy-ModuleTemplate {
     }
 }
 
+# Step 5: Add Copy-CobraTemplate Function (enhanced to handle module templates)
 function Copy-CobraTemplate {
     [CmdletBinding()]
     param(
@@ -595,6 +538,65 @@ function Copy-CobraTemplate {
             }
             return $false
         }
+    }
+}
+
+function Copy-CobraSnippet {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$SnippetName,
+        
+        [hashtable]$Parameters = @{}
+    )
+    
+    $templatePath = Join-Path $PSScriptRoot "Templates"
+
+    $snippetPath = "$($templatePath)\code-snippets\$SnippetName.ps1"
+
+    if (-not (Test-Path $snippetPath)) {
+        # Try function snippets
+        $snippetPath = "$($templatePath)\function-snippets\$SnippetName.ps1"
+    }
+    
+    if (-not (Test-Path $snippetPath)) {
+        Write-Host "Snippet '$SnippetName' not found!" -ForegroundColor Red
+        Write-Host "Available snippets:" -ForegroundColor Yellow
+        $availableSnippets = Get-CobraTemplates -Category "snippet"
+        if ($availableSnippets) {
+            $availableSnippets | Format-Table Name, Description -AutoSize
+        }
+        return
+    }
+    
+    try {
+        $content = Get-Content $snippetPath -Raw
+        
+        # Replace common placeholders
+        $functionName = if ($Parameters['FunctionName']) { $Parameters['FunctionName'] } else { 'YourFunction' }
+        $moduleName = if ($Parameters['ModuleName']) { $Parameters['ModuleName'] } else { 'YourModule' }
+        
+        $content = $content -replace '\{FunctionName\}', $functionName
+        $content = $content -replace '\{ModuleName\}', $moduleName
+        $content = $content -replace '\{Date\}', (Get-Date).ToString('yyyy-MM-dd')
+        $content = $content -replace '\{Author\}', $env:USERNAME
+        
+        # Replace custom parameters
+        foreach ($param in $Parameters.GetEnumerator()) {
+            $placeholder = "{$($param.Key)}"
+            $content = $content -replace [regex]::Escape($placeholder), $param.Value
+        }
+        
+        # Copy to clipboard
+        $content | Set-Clipboard
+        Write-Host "[OK] Snippet '$SnippetName' copied to clipboard" -ForegroundColor Green
+        
+        Log-CobraActivity "Used snippet '$SnippetName'"
+        
+    }
+    catch {
+        Write-Host "Error copying snippet: $($_.Exception.Message)" -ForegroundColor Red
+        Log-CobraActivity "Error copying snippet '$SnippetName': $($_.Exception.Message)"
     }
 }
 
@@ -864,7 +866,7 @@ function Publish-CobraTemplate {
         }
         
         Copy-Item $localPath $registryPath -Force
-        Write-Host "✓ Template '$Name' published to team registry" -ForegroundColor Green
+        Write-Host "[OK] Template '$Name' published to team registry" -ForegroundColor Green
         Log-CobraActivity "Published template '$Name' to registry"
         
     }
@@ -922,7 +924,7 @@ function Import-CobraTemplate {
         }
         
         Copy-Item $registryPath $localPath -Force
-        Write-Host "✓ Template '$Name' imported from registry" -ForegroundColor Green
+        Write-Host "[OK] Template '$Name' imported from registry" -ForegroundColor Green
         Log-CobraActivity "Imported template '$Name' from registry"
         
     }
@@ -973,7 +975,7 @@ function Save-ModuleTemplate {
         }
         
         $template | ConvertTo-Json -Depth 10 | Out-File -FilePath $TargetPath -Encoding UTF8
-        Write-Host "✓ Module template saved: $TargetPath" -ForegroundColor Green
+        Write-Host "[OK] Module template saved: $TargetPath" -ForegroundColor Green
         
     }
     catch {
@@ -1014,7 +1016,7 @@ $functionCode
 "@
             
             $template | Out-File -FilePath $TargetPath -Encoding UTF8
-            Write-Host "✓ Function template saved: $TargetPath" -ForegroundColor Green
+            Write-Host "[OK] Function template saved: $TargetPath" -ForegroundColor Green
         }
         else {
             Write-Host "Function '$FunctionName' not found in source file!" -ForegroundColor Red
@@ -1054,7 +1056,7 @@ $content
 "@
         
         $template | Out-File -FilePath $TargetPath -Encoding UTF8
-        Write-Host "✓ Snippet template saved: $TargetPath" -ForegroundColor Green
+        Write-Host "[OK] Snippet template saved: $TargetPath" -ForegroundColor Green
         
     }
     catch {

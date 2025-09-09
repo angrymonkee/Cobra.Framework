@@ -1,10 +1,14 @@
 # Simple test for module template functions
+
+# Load shared test configuration
+. "$PSScriptRoot\TestConfig.ps1"
+
 function Get-ModuleTemplates {
     [CmdletBinding()]
     param()
     
     $moduleTemplates = @()
-    $modulesPath = "D:\Code\Cobra.Framework\Modules"
+    $modulesPath = "$global:TestCobraPath\Modules"
     
     if (Test-Path $modulesPath) {
         try {

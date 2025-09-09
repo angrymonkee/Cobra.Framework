@@ -1,6 +1,9 @@
 # Test script for the new Cobra Module Marketplace
 # Run this to test Phase 1 functionality
 
+# Load shared test configuration
+. "$PSScriptRoot\TestConfig.ps1"
+
 Write-Host "🚀 Testing Cobra Module Marketplace - Phase 1" -ForegroundColor Cyan
 Write-Host ("=" * 60) -ForegroundColor DarkGray
 

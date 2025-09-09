@@ -1,6 +1,10 @@
 # Test enhanced Get-CobraTemplates with module template support
+
+# Load shared test configuration
+. "$PSScriptRoot\TestConfig.ps1"
+
 $global:CobraConfig = @{ 
-    CobraRoot = 'D:\Code\Cobra.Framework' 
+    CobraRoot = $global:TestCobraPath 
 }
 $global:coreScriptLoaded = $false
 

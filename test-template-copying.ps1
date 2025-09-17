@@ -1,6 +1,10 @@
 # Test module template copying functionality
+
+# Load shared test configuration
+. "$PSScriptRoot\TestConfig.ps1"
+
 $global:CobraConfig = @{ 
-    CobraRoot = 'D:\Code\Cobra.Framework' 
+    CobraRoot = $global:TestCobraPath 
 }
 $global:coreScriptLoaded = $false
 

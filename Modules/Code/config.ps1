@@ -1,7 +1,7 @@
 @{
     Name               = "Code"
     Description        = "General code development module"
-    Repo               = ""
+    Repo               = $global:CobraConfig:CodeRepo
     AuthMethod         = "Authenticate-CodeRepo"
     SetupMethod        = "Configure-CodeRepo"
     BuildMethod        = "Build-CodeRepo"

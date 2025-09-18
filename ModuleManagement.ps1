@@ -169,6 +169,232 @@ function Save-ModuleRegistry {
     }
 }
 
+# Get module registry information and handle registry commands
+function Get-ModuleRegistryInfo {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Action,
+        
+        [string]$ModuleName = $null,
+        [string]$SearchTerm = $null
+    )
+    
+    switch ($Action.ToLower()) {
+        "list" {
+            $registry = Get-ModuleRegistry
+            if (-not $registry) {
+                Write-Host "Registry not initialized. Run: cobra modules registry init" -ForegroundColor Red
+                return
+            }
+            
+            if (-not $registry.Modules -or $registry.Modules.Count -eq 0) {
+                Write-Host "No modules found in registry" -ForegroundColor Yellow
+                Write-Host "Use 'cobra modules publish <name>' to add modules to the registry" -ForegroundColor DarkGray
+                return
+            }
+            
+            Write-Host "COBRA MODULE REGISTRY" -ForegroundColor Cyan
+            Write-Host ("=" * 50) -ForegroundColor DarkGray
+            
+            $moduleCount = 0
+            foreach ($moduleName in $registry.Modules.Keys) {
+                $moduleData = $registry.Modules[$moduleName]
+                
+                # Get latest version - handle hashtable keys correctly
+                if ($moduleData.versions -and $moduleData.versions.Keys.Count -gt 0) {
+                    # Get version keys and sort them
+                    $versionKeys = $moduleData.versions.Keys | Where-Object { 
+                        $_ -match '^\d+\.\d+\.\d+$' 
+                    }
+                    
+                    if ($versionKeys) {
+                        $latestVersionKey = $versionKeys | Sort-Object { 
+                            try { 
+                                [Version]$_ 
+                            }
+                            catch { 
+                                [Version]"0.0.0" 
+                            } 
+                        } | Select-Object -Last 1
+                        
+                        $latestVersion = @{
+                            Name  = $latestVersionKey
+                            Value = $moduleData.versions[$latestVersionKey]
+                        }
+                    }
+                    else {
+                        $latestVersion = $null
+                    }
+                }
+                else {
+                    $latestVersion = $null
+                }
+                
+                if ($latestVersion) {
+                    $versionData = $latestVersion.Value
+                    $moduleCount++
+                    
+                    Write-Host "  $moduleName" -ForegroundColor White -NoNewline
+                    Write-Host " (v$($latestVersion.Name))" -ForegroundColor Green
+                    
+                    if ($versionData.Description) {
+                        Write-Host "    $($versionData.Description)" -ForegroundColor DarkGray
+                    }
+                    
+                    if ($versionData.Tags -and $versionData.Tags.Count -gt 0) {
+                        Write-Host "    Tags: $($versionData.Tags -join ', ')" -ForegroundColor DarkCyan
+                    }
+                    
+                    # Show install count and rating if available
+                    $installCount = if ($moduleData.stats -and $moduleData.stats.InstallCount) { $moduleData.stats.InstallCount } else { 0 }
+                    $avgRating = if ($moduleData.ratings -and $moduleData.ratings.Count -gt 0) {
+                        ($moduleData.ratings | ForEach-Object { $_.Rating } | Measure-Object -Average).Average
+                    }
+                    else { $null }
+                    
+                    $statsInfo = @()
+                    $statsInfo += "Installs: $installCount"
+                    if ($avgRating) {
+                        $statsInfo += "Rating: $([math]::Round($avgRating, 1))/5"
+                    }
+                    Write-Host "    $($statsInfo -join ' | ')" -ForegroundColor Gray
+                    
+                    Write-Host ""
+                }
+            }
+            
+            Write-Host "Total: $moduleCount modules in registry" -ForegroundColor Cyan
+            Write-Host "Registry location: $($global:CobraConfig.ModuleRegistryLocation)" -ForegroundColor DarkGray
+        }
+        
+        "info" {
+            if (-not $ModuleName) {
+                Write-Host "Usage: cobra modules registry info <module-name>" -ForegroundColor Red
+                return
+            }
+            
+            $registry = Get-ModuleRegistry
+            if (-not $registry) {
+                Write-Host "Registry not initialized. Run: cobra modules registry init" -ForegroundColor Red
+                return
+            }
+            
+            if (-not $registry.Modules.Keys -contains $ModuleName) {
+                Write-Host "Module '$ModuleName' not found in registry" -ForegroundColor Red
+                Write-Host "Use 'cobra modules search $ModuleName' to search for similar modules" -ForegroundColor Yellow
+                return
+            }
+            
+            $moduleData = $registry.Modules.$ModuleName
+            
+            Write-Host "MODULE INFORMATION: $ModuleName" -ForegroundColor Cyan
+            Write-Host ("=" * 50) -ForegroundColor DarkGray
+            
+            # Show all versions - use hashtable keys correctly
+            $versionKeys = $moduleData.versions.Keys | Where-Object { 
+                $_ -match '^\d+\.\d+\.\d+$' 
+            }
+            $versions = $versionKeys | Sort-Object { 
+                try { 
+                    [Version]$_ 
+                }
+                catch { 
+                    [Version]"0.0.0" 
+                } 
+            } | ForEach-Object {
+                @{
+                    Name  = $_
+                    Value = $moduleData.versions[$_]
+                }
+            }
+            $latestVersion = $versions | Select-Object -Last 1
+            
+            Write-Host "Latest Version: " -ForegroundColor Yellow -NoNewline
+            Write-Host "$($latestVersion.Name)" -ForegroundColor White
+            
+            $latestData = $latestVersion.Value
+            
+            if ($latestData.Description) {
+                Write-Host "Description: " -ForegroundColor Yellow -NoNewline
+                Write-Host "$($latestData.Description)" -ForegroundColor White
+            }
+            
+            if ($latestData.Author) {
+                Write-Host "Author: " -ForegroundColor Yellow -NoNewline
+                Write-Host "$($latestData.Author)" -ForegroundColor White
+            }
+            
+            if ($latestData.Tags -and $latestData.Tags.Count -gt 0) {
+                Write-Host "Tags: " -ForegroundColor Yellow -NoNewline
+                Write-Host "$($latestData.Tags -join ', ')" -ForegroundColor Cyan
+            }
+            
+            if ($latestData.Categories -and $latestData.Categories.Count -gt 0) {
+                Write-Host "Categories: " -ForegroundColor Yellow -NoNewline
+                Write-Host "$($latestData.Categories -join ', ')" -ForegroundColor Cyan
+            }
+            
+            if ($latestData.Dependencies -and $latestData.Dependencies.Count -gt 0) {
+                Write-Host "Dependencies: " -ForegroundColor Yellow -NoNewline
+                Write-Host "$($latestData.Dependencies.Keys -join ', ')" -ForegroundColor White
+            }
+            
+            # Installation stats
+            $installCount = if ($moduleData.stats -and $moduleData.stats.InstallCount) { $moduleData.stats.InstallCount } else { 0 }
+            Write-Host "Install Count: " -ForegroundColor Yellow -NoNewline
+            Write-Host "$installCount" -ForegroundColor White
+            
+            # Ratings and reviews
+            if ($moduleData.ratings -and $moduleData.ratings.Count -gt 0) {
+                $avgRating = ($moduleData.ratings | ForEach-Object { $_.Rating } | Measure-Object -Average).Average
+                Write-Host "Average Rating: " -ForegroundColor Yellow -NoNewline
+                Write-Host "$([math]::Round($avgRating, 1))/5 ($($moduleData.ratings.Count) reviews)" -ForegroundColor White
+                
+                Write-Host ""
+                Write-Host "Recent Reviews:" -ForegroundColor Yellow
+                $moduleData.ratings | Select-Object -Last 3 | ForEach-Object {
+                    Write-Host "  $($_.Rating)/5 stars" -ForegroundColor Green -NoNewline
+                    if ($_.Review) {
+                        Write-Host " - $($_.Review)" -ForegroundColor DarkGray
+                    }
+                    else {
+                        Write-Host ""
+                    }
+                }
+            }
+            
+            # All available versions
+            Write-Host ""
+            Write-Host "Available Versions:" -ForegroundColor Yellow
+            foreach ($version in $versions) {
+                $versionData = $version.Value
+                $publishDate = if ($versionData.PublishDate) { 
+                    try { [DateTime]::Parse($versionData.PublishDate).ToString("yyyy-MM-dd") } 
+                    catch { "Unknown" } 
+                }
+                else { "Unknown" }
+                
+                Write-Host "  v$($version.Name)" -ForegroundColor White -NoNewline
+                Write-Host " (Published: $publishDate)" -ForegroundColor DarkGray
+                
+                if ($versionData.ReleaseNotes -and $versionData.ReleaseNotes -ne "New release") {
+                    Write-Host "    $($versionData.ReleaseNotes)" -ForegroundColor DarkGray
+                }
+            }
+        }
+        
+        "init" {
+            Initialize-ModuleMarketplace -Force:$true
+        }
+        
+        default {
+            Write-Host "Invalid registry action: $Action" -ForegroundColor Red
+            Write-Host "Available actions: list, info, init" -ForegroundColor Yellow
+        }
+    }
+}
+
 # Create module metadata from existing module
 function New-ModuleMetadata {
     [CmdletBinding()]
@@ -256,34 +482,44 @@ function Resolve-ModuleDependencies {
     $registry = Get-ModuleRegistry
     if (-not $registry) { return @() }
     
-    $resolved = @()
-    $resolving = @()
+    $script:resolved = @()
+    $script:resolving = @()
     
     function ResolveDependency($name, $requestedVersion) {
         # Prevent circular dependencies
-        if ($resolving -contains $name) {
+        if ($script:resolving -contains $name) {
             Write-Warning "Circular dependency detected: $name"
             return
         }
         
-        if ($resolved | Where-Object { $_.Name -eq $name }) {
+        if ($script:resolved | Where-Object { $_.Name -eq $name }) {
             return  # Already resolved
         }
         
-        $resolving += $name
+        $script:resolving += $name
         
         # Get module info
-        if (-not $registry.Modules.$name) {
+        if (-not $registry.Modules.Keys -contains $name) {
             Write-Error "Dependency not found in registry: $name"
             return
         }
         
-        $moduleInfo = $registry.Modules.$name
+        $moduleInfo = $registry.Modules[$name]
         
-        # Select version
-        $availableVersions = $moduleInfo.versions.PSObject.Properties.Name | Sort-Object -Descending
+        # Select version - use hashtable keys correctly
+        $availableVersions = @($moduleInfo.versions.Keys | Where-Object { 
+                $_ -match '^\d+\.\d+\.\d+$' 
+            } | Sort-Object { 
+                try { 
+                    [Version]$_ 
+                }
+                catch { 
+                    [Version]"0.0.0" 
+                } 
+            } -Descending)
+        
         $selectedVersion = if ($requestedVersion -eq "latest") {
-            $availableVersions[0]
+            if ($availableVersions.Count -gt 0) { $availableVersions[0] } else { $null }
         }
         else {
             $availableVersions | Where-Object { $_ -eq $requestedVersion } | Select-Object -First 1
@@ -304,18 +540,18 @@ function Resolve-ModuleDependencies {
         }
         
         # Add to resolved list
-        $resolved += [PSCustomObject]@{
+        $script:resolved += [PSCustomObject]@{
             Name     = $name
             Version  = $selectedVersion
             Metadata = $metadata
         }
         
-        $resolving = $resolving | Where-Object { $_ -ne $name }
+        $script:resolving = $script:resolving | Where-Object { $_ -ne $name }
     }
     
     ResolveDependency $ModuleName $Version
     
-    return $resolved
+    return $script:resolved
 }
 
 # Update module installation statistics
@@ -365,11 +601,32 @@ function Install-SingleModule {
             Remove-Item -Path $modulePath -Recurse -Force
         }
         
-        # Create module directory
-        New-Item -Path $modulePath -ItemType Directory -Force | Out-Null
+        # Extract package to temporary directory first
+        $tempPath = Join-Path $env:TEMP "CobraModule_$ModuleName_$((Get-Date).Ticks)"
+        New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
         
-        # Extract package
-        Expand-Archive -Path $packagePath -DestinationPath $modulePath -Force
+        try {
+            # Extract package to temp directory
+            Expand-Archive -Path $packagePath -DestinationPath $tempPath -Force
+            
+            # Find the actual module directory in the extracted content
+            $extractedModuleDir = Get-ChildItem -Path $tempPath -Directory | Where-Object { $_.Name -eq $ModuleName } | Select-Object -First 1
+            
+            if ($extractedModuleDir) {
+                # Copy contents from extracted module directory to target location, preserving structure
+                Copy-Item -Path "$($extractedModuleDir.FullName)\*" -Destination $modulePath -Recurse -Force
+            }
+            else {
+                # Fallback: copy all extracted content directly (in case package structure is different)
+                Copy-Item -Path "$tempPath\*" -Destination $modulePath -Recurse -Force
+            }
+        }
+        finally {
+            # Clean up temp directory
+            if (Test-Path $tempPath) {
+                Remove-Item -Path $tempPath -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
         
         # Register module
         if (-not $global:CobraScriptModules) {
@@ -447,6 +704,59 @@ function Set-ModuleRating {
     else {
         Write-Host "Failed to save rating" -ForegroundColor Red
         return $false
+    }
+}
+
+# Get next version number by incrementing patch version
+function Get-NextModuleVersion {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ModuleName
+    )
+    
+    try {
+        # Get registry to check existing versions
+        $registry = Get-ModuleRegistry
+        if (-not $registry -or -not $registry.Modules.ContainsKey($ModuleName)) {
+            # No existing versions, start with 1.0.0
+            return "1.0.0"
+        }
+        
+        # Get all existing versions and find the highest
+        $existingVersions = $registry.Modules.$ModuleName.versions.PSObject.Properties.Name
+        if (-not $existingVersions -or $existingVersions.Count -eq 0) {
+            return "1.0.0"
+        }
+        
+        # Parse versions and find the highest
+        $highestVersion = $existingVersions | 
+        ForEach-Object {
+            if ($_ -match "^(\d+)\.(\d+)\.(\d+)$") {
+                [PSCustomObject]@{
+                    Original  = $_
+                    Major     = [int]$matches[1]
+                    Minor     = [int]$matches[2]
+                    Patch     = [int]$matches[3]
+                    SortValue = ([int]$matches[1] * 1000000) + ([int]$matches[2] * 1000) + [int]$matches[3]
+                }
+            }
+        } |
+        Sort-Object SortValue -Descending |
+        Select-Object -First 1
+            
+        if (-not $highestVersion) {
+            return "1.0.0"
+        }
+        
+        # Increment patch version
+        $newVersion = "$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch + 1)"
+        Write-Host "Auto-incrementing version from $($highestVersion.Original) to $newVersion" -ForegroundColor Cyan
+        return $newVersion
+    }
+    catch {
+        Write-Host "Error determining next version, defaulting to 1.0.0: $($_.Exception.Message)" -ForegroundColor Yellow
+        return "1.0.0"
     }
 }
 
@@ -882,11 +1192,33 @@ function CobraModulesDriver([string] $command, [string[]] $options) {
         "install" {
             if ($options.Count -gt 0) {
                 $moduleName = $options[0]
-                $version = if ($options.Count -gt 1) { $options[1] } else { "latest" }
-                Install-CobraModule -ModuleName $moduleName -Version $version
+                $version = "latest"
+                $force = $false
+                
+                # Parse remaining options
+                for ($i = 1; $i -lt $options.Count; $i++) {
+                    $opt = $options[$i]
+                    if ($opt -eq "-Force" -or $opt -eq "--force" -or $opt -eq "-f") {
+                        $force = $true
+                    }
+                    elseif ($opt -match "^\d+\.\d+\.\d+$") {
+                        # Version number
+                        $version = $opt
+                    }
+                    elseif ($opt -notmatch "^-") {
+                        # Assume it's a version if not a flag
+                        $version = $opt
+                    }
+                }
+                
+                Install-CobraModule -ModuleName $moduleName -Version $version -Force:$force
             }
             else {
-                Write-Host "Usage: cobra modules install <module-name> [version]" -ForegroundColor Red
+                Write-Host "Usage: cobra modules install <module-name> [version] [-Force]" -ForegroundColor Red
+                Write-Host "Examples:" -ForegroundColor Yellow
+                Write-Host "  cobra modules install Code" -ForegroundColor Cyan
+                Write-Host "  cobra modules install Code 1.2.0" -ForegroundColor Cyan
+                Write-Host "  cobra modules install Code -Force" -ForegroundColor Cyan
             }
         }
         "add" {
@@ -978,10 +1310,37 @@ function CobraModulesDriver([string] $command, [string[]] $options) {
         "publish" {
             if ($options.Count -gt 0) {
                 $moduleName = $options[0]
-                Publish-CobraModule -ModuleName $moduleName
+                $version = $null
+                
+                # Parse version from various formats
+                for ($i = 1; $i -lt $options.Count; $i++) {
+                    $opt = $options[$i]
+                    if ($opt -eq "-version" -or $opt -eq "--version" -or $opt -eq "-v") {
+                        if ($i + 1 -lt $options.Count) {
+                            $version = $options[$i + 1]
+                            break
+                        }
+                    }
+                    elseif ($opt -match "^\d+\.\d+\.\d+$") {
+                        # Positional version argument (e.g., cobra modules publish ModuleName 1.2.0)
+                        $version = $opt
+                        break
+                    }
+                }
+                
+                # If no version specified, auto-increment from existing versions
+                if (-not $version) {
+                    $version = Get-NextModuleVersion -ModuleName $moduleName
+                }
+                
+                Publish-CobraModule -ModuleName $moduleName -Version $version
             }
             else {
-                Write-Host "Usage: cobra modules publish <module-name>" -ForegroundColor Red
+                Write-Host "Usage: cobra modules publish <module-name> [version] or [-version <version>]" -ForegroundColor Red
+                Write-Host "Examples:" -ForegroundColor Yellow
+                Write-Host "  cobra modules publish MyModule 1.2.0" -ForegroundColor Cyan
+                Write-Host "  cobra modules publish MyModule -version 1.2.0" -ForegroundColor Cyan
+                Write-Host "  cobra modules publish MyModule (auto-increments version)" -ForegroundColor Cyan
             }
         }
         default {

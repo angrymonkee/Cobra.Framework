@@ -724,7 +724,7 @@ function Get-NextModuleVersion {
         }
         
         # Get all existing versions and find the highest
-        $existingVersions = $registry.Modules.$ModuleName.versions.PSObject.Properties.Name
+        $existingVersions = $registry.Modules.$ModuleName.versions.Keys
         if (-not $existingVersions -or $existingVersions.Count -eq 0) {
             return "1.0.0"
         }
@@ -767,7 +767,8 @@ function Publish-CobraModule {
         [Parameter(Mandatory = $true)]
         [string]$ModuleName,
         
-        [string]$Version = "1.0.0",
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
         [string]$Author = $env:USERNAME,
         [string]$Description = "",
         [string[]]$Tags = @(),
@@ -1328,7 +1329,7 @@ function CobraModulesDriver([string] $command, [string[]] $options) {
                     }
                 }
                 
-                # If no version specified, auto-increment from existing versions
+                # If no version specified, auto-increment from existing versions in registry
                 if (-not $version) {
                     $version = Get-NextModuleVersion -ModuleName $moduleName
                 }

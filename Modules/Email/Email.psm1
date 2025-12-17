@@ -13,9 +13,6 @@ function Initialize-EmailModule {
         throw "Failed to load module configuration"
     }
     
-    # Load module configuration
-    $config = . "$PSScriptRoot/config.ps1"
-    
     # Register as standalone module (no repository dependency)
     Register-CobraStandaloneModule -Name "Email" -Description "$($config.Description)" -Config $config
 

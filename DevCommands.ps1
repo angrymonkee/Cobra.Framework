@@ -139,7 +139,7 @@ function AppInfo {
     Write-Host "Branch:    " -NoNewline -ForegroundColor DarkYellow
     write-host "$branch"
     Write-host "Methods:   " -NoNewline -ForegroundColor DarkYellow
-    write-host "$($appConfig.AuthMethod), $($appConfig.SetupMethod), $($appConfig.BuildMethod), $($appConfig.TestMethod), $($appConfig.RunMethod), $($appConfig.DevelopMethod)"
+    write-host "$($appConfig.AuthMethod), $($appConfig.SetupMethod), $($appConfig.BuildMethod), $($appConfig.TestMethod), $($appConfig.RunMethod), $($appConfig.DevMethod)"
     write-host "'Go' Links:" -ForegroundColor DarkYellow
     foreach ($link in $global:goTaskStore.GetEnumerator()) {
         Write-Host "            $($link.Key)" -NoNewline
@@ -154,8 +154,8 @@ function DevEnv {
     try {
         $appConfig = (GetCurrentAppConfig)
 
-        if ($appConfig.DevelopMethod -ne "") {
-            & $appConfig.DevelopMethod
+        if ($appConfig.DevMethod -ne "") {
+            & $appConfig.DevMethod
         }
         else {
             write-host "No development method configured."
